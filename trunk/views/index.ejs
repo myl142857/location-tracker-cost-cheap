@@ -1,0 +1,172 @@
+<!DOCTYPE html>          
+<html>                           
+  <head>                                            
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Tracker</title>
+    <meta name="viewport" content="width=device-width" />
+    <style type="text/css">                    
+      html , body {
+        font: normal 0.9em arial, helvetica;
+		padding-top: 60px;
+        padding-bottom: 40px;
+      }                 
+      #map_canvas { height: 100% }    
+    </style> 
+
+	<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA9hZO1Yz7lBgNJiKfu5qznUxk2EhuqbxI&sensor=true">
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"> </script>
+
+
+    <script type="text/javascript">
+		$(document).ready(function() {
+
+			var socket  = io.connect('http://localhost:3000');
+
+	      	$('#save').click(function() {
+		        
+		        if ($('#latitude').val() == '' || $('#longitude').val() == '' || $('#accuracy').val == '' ) {
+		          return alert('Please enter both latitude & longitude!');
+		        }
+
+		        var data = {
+		          latitude: $('#latitude').val(),
+		          longitude: $('#longitude').val(),
+		          accuracy: $('#accuracy').val()
+		        };
+
+		        socket.emit('add location', data);
+		        $('#latitude').val('');
+		        $('#longitude').val('');
+		        $('#accuracy').val('');
+	        });
+
+	      	socket.on('populate', function(data) {
+		        alert( ' ######### populate ############## ');
+		        var out = "";
+		        var row = "";
+		        row += '<table border="1" class="table table-striped" ><thead><tr><th>Latitude</th><th>Longitude</th><th>Accuracy</th><th>Location</th></tr></thead>';
+		        $.each(data, function(i, obj) {
+		          out += "<li> lat:"+obj.latitude+" lng:"+obj.longitude+" Accuracy:"+obj.accuracy+"</li>";
+		          row += "<tr> <td>"+obj.latitude+" </td> <td>"+obj.longitude+"</td><td>"+obj.accuracy+"</td><td>"+ obj.location+ "</td></tr>";
+		        });
+		        row += '</table>';
+		        //$('#locations').html(out);
+		        //$('#table_location').html(row);
+		        document.getElementById('table_location').innerHTML = row;
+		    });
+
+	    	var mapOptions = {
+	          center: new google.maps.LatLng(-34.397, 150.644),
+	          zoom: 8,
+	          mapTypeId: google.maps.MapTypeId.ROADMAP
+	        };
+	      	var map = new google.maps.Map(document.getElementById("map_canvas"),mapOptions);
+      	});
+    </script>
+
+  </head> 
+
+  <body>
+	<div class="container">
+		<div class="navbar navbar-fixed-top">
+	      <div class="navbar-inner">
+	        <div class="container">
+	        	<a class="brand" href="/">Location Tracker</a>
+	        	<div class="nav-collapse">
+            		<ul class="nav">
+						<li class="active"> <a href="www.google.com">Home</a></li>
+						<li> <a href="www.google.com">Pricing</a></li>
+						<li> <a href="www.google.com">About</a></li>			
+					</ul>
+					<ul class="nav pull-right">
+          				<li> <a href="#myModal" data-toggle="modal"> Sign Up </a></li>
+          				<li class="divider-vertical"></li>
+          				<li class="dropdown">
+        		    <a class="dropdown-toggle" href="#" data-toggle="dropdown">Sign In <strong class="caret"></strong></a>
+	            <div class="dropdown-menu" style="padding: 15px; padding-bottom: 0px;">
+	              <!-- Login form here -->
+    	          <form action="[YOUR ACTION]" method="post" accept-charset="UTF-8">
+					<input type="text" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Username"/> </br>
+					<input type="password" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Password"/> </br>
+				  	<input id="user_remember_me" style="float: left; margin-right: 10px;" type="checkbox" value="1"/>Remember me</br>
+ 				  	<input class="btn btn-primary" style="clear: left; width: 100%; height: 32px; font-size: 13px;" type="submit" name="commit" value="Sign In" />
+				  </form>
+    	        </div>
+        	  </li>
+          			</ul>
+				</div><!--/.nav-collapse -->
+	        </div> 
+	      </div>
+	    </div>
+
+	    <div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		  <div class="modal-header">
+		    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+		    <h3 id="myModalLabel">Tracker Sign up</h3>
+		  </div>
+		  <div class="modal-body">
+		  	<form class="well">
+				<label> Name </label>
+				<input type="text" class="span4"/> </br> </br>
+				<label> Username </label>
+				<input type="email" class="span4" placeholder="Enter an email address."/> </br>
+				<label> Password </label>
+				<input type="password" class="span4"/> </br> </br>
+				
+		    	<button class="btn btn-primary">Sing up</button>		
+			    <button class="btn btn-danger" data-dismiss="modal" aria-hidden="true">Close</button>
+			</form>
+		  </div>
+		</div>    
+
+	  	<div class="hero-unit geddy-welcome-box">
+		  	<h1>Efficient location tracker to track your deliveries.</h1>
+		  	<p><a href="http://geddyjs.org/tutorial.html" class="btn btn-primary btn-large">Take a tour »</a></p>
+		</div>
+
+<a href="#myModal" role="button" class="btn" data-toggle="modal">Launch demo modal</a>
+ 
+<!-- Modal -->
+<div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="myModalLabel">Modal header</h3>
+  </div>
+  <div class="modal-body">
+    <p>One fine body…</p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+    <button class="btn btn-primary">Save changes</button>
+  </div>
+</div>
+
+		<form class = "well">
+		    <b>Create new location</b>
+		    <div>Latitude: <input type='text' class="span4" id='latitude' value=''></div>
+		    <div>Longitude: <input type='text'  class="span4" id='longitude' value=''></div>
+		    <div>Accuracy: <input type='text' class="span4" id='accuracy' value=''></div>
+		    <button class="btn btn-primary" id='save' >Save</button>
+	    </form>
+
+	    <table class="table">
+			<tr>
+				<td class="span7" id="table_location"> 
+				</td>
+
+				<td>
+					<div id="map_canvas" style=" height:400px"/>
+				</td>
+
+			</tr>
+
+		</table>
+
+    </div> <!-- /. div container -->
+  </body>                                                                                                                              
+</html> 
