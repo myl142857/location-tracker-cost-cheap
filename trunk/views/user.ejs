@@ -1,0 +1,33 @@
+<% layout('layout') -%>
+<br><br>
+<h1> User Signed IN </h1>
+<input type='button' value='Add Phone Number' id='add_phone'></div>
+<h1>Supplies</h1>
+
+<form class = "well">
+    <b>Create new location</b>
+    <div>Latitude: <input type='text' class="span4" id='latitude' value=''></div>
+    <div>Longitude: <input type='text'  class="span4" id='longitude' value=''></div>
+    <div>Accuracy: <input type='text' class="span4" id='accuracy' value=''></div>
+    <button class="btn btn-primary" id='save' >Save</button>
+</form>
+
+<table class="table">
+	<tr>
+		<td class="span7" id="table_location"> 
+		</td>
+		<td>
+			<div id="map_canvas" style=" height:400px"/>
+		</td>
+	</tr>
+</table>
+
+<script type="text/javascript"> 
+
+$(document).ready(function () {
+	alert(' Document ready ');
+    $("#add_phone").click(function() {
+    	alert(' clicked save ');
+    });
+});
+</script>  

@@ -35,6 +35,7 @@ app.configure('production', function() {
 app.configure(function(){
   app.set('views', __dirname + '/views'); //specifying template path
   app.set('view engine', 'ejs'); //specifying template engine
+  app.engine('ejs', require('ejs-locals'));
   app.use(express.favicon());
   app.use(express.bodyParser());
   app.use(express.cookieParser()); 
@@ -49,7 +50,23 @@ app.configure(function(){
 db = mongoose.connect(app.set('db-uri'));
 
 app.get('/', function(request, response) {
-  response.render('index');
+  response.render('index1',{ user:null });
+});
+
+app.get('/about', function(request, response) {
+  response.render('about',{ user:null });
+});
+
+app.get('/pricing', function(request, response) {
+  response.render('pricing',{ user:null });
+});
+
+app.post('/register', function(request, response) {
+  response.render('user', { user: {username:"Manikandan"} });
+});
+
+app.post('/login', function(request, response) {
+  response.render('index1', { user: {username:"Manikandan"} });
 });
 
 app.post('/update_location', function(request, response) {
