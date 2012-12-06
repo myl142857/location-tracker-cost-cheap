@@ -1,0 +1,52 @@
+<!DOCTYPE html>          
+<html>                           
+  <head>                                            
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Tracker</title>
+
+    <style type="text/css">                    
+      
+      html , body {
+        font: normal 0.9em arial, helvetica;
+		    padding-top: 40px;
+        height:100%;
+        background: #f2f9fe;
+        background: -moz-radial-gradient(center, ellipse cover, #f2f9fe 0%, #d6f0fd 100%);
+      /* FF3.6+ */
+        background: -webkit-gradient(radial, center center, 0px, center center, 100%, color-stop(0%, #f2f9fe), color-stop(100%, #d6f0fd));
+      /* Chrome,Safari4+ */
+        background: -webkit-radial-gradient(center, ellipse cover, #f2f9fe 0%, #d6f0fd 100%);
+      /* Chrome10+,Safari5.1+ */
+        background: -o-radial-gradient(center, ellipse cover, #f2f9fe 0%, #d6f0fd 100%);
+      /* Opera 12+ */
+        background: -ms-radial-gradient(center, ellipse cover, #f2f9fe 0%, #d6f0fd 100%);
+      /* IE10+ */
+        background: radial-gradient(center, ellipse cover, #f2f9fe 0%, #d6f0fd 100%);
+      /* W3C */        
+      }                
+    </style> 
+
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <%-stylesheets%>
+    <%-scripts%>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <body>
+      <div class="container">
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+              <div class="container">
+                <a class="brand" href="/">Location Tracker</a>
+               </div><!--/.nav-collapse -->
+              </div> 
+            </div>
+        </div>
+
+        <div class="content">
+          <div class="container">      
+          <%- body %>
+          </div>
+        </div>
+      </div> <!-- div container -->
+    </body>                                                                                                                              
+</html> 
