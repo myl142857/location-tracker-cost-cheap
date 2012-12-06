@@ -30,9 +30,9 @@
 
       footer {
         color: #ffffff;
-        background: #000000;
+        background: #ff0000;
         padding: 17px 0 18px 0;
-        border-top: 5px solid #000000;
+        border-top: 5px solid #0000;
         width:100%;
         height:200px;
         text-align: center;
@@ -51,13 +51,10 @@
     </style> 
 
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
-
-    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <%-stylesheets%>
+    <%-scripts%>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
     <script src="bootstrap/js/bootstrap.min.js"></script>
-
-    <script type="text/javascript"
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA9hZO1Yz7lBgNJiKfu5qznUxk2EhuqbxI&sensor=true"></script>
 <body>
   <div class="wrapper">
   <div class="container">
@@ -66,14 +63,13 @@
           <div class="container">
             <a class="brand" href="/">Location Tracker</a>
             <div class="nav-collapse">
-                <ul class="nav">
-            <li class="active"> <a href="www.google.com">Home</a></li>
-            <li> <a href="/pricing">Pricing</a></li>
-            <li> <a href="/about">About</a></li>      
+            <ul class="nav">
+              <li class="active"> <a href="/">Home</a></li>
+              <li> <a href="/pricing">Pricing</a></li>
+              <li> <a href="/about">About</a></li>      
           </ul>
           <ul class="nav pull-right">
                 <% if (!user) { %>
-                  <li><a>Welcome, Please login</a></li>
                   <li> <a href="#myModal" data-toggle="modal"> Sign Up </a></li>
                   <li class="divider-vertical"></li>
                   <li class="dropdown">
@@ -81,9 +77,9 @@
                   <div class="dropdown-menu" style="padding: 15px; padding-bottom: 0px;">
                     <!-- Login form -->
                     <form action="/login" method="post" accept-charset="UTF-8">
-                      <input type="text" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Username"/> </br>
-                      <input type="password" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Password"/> </br>
-                      <input id="user_remember_me" style="float: left; margin-right: 10px;" type="checkbox" value="1"/>Remember me</br>
+                      <input name="email" type="text" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Username"/> </br>
+                      <input name="password" type="password" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Password"/> </br>
+                      <input id="user_remember_me" style="color:red; float: left; margin-right: 10px;" type="checkbox" value="1"/>Remember me</br>
                       <input class="btn btn-primary" style="clear: left; width: 100%; height: 32px; font-size: 13px;" type="submit" name="commit" value="Sign In" />
                     </form>
                   </div>
@@ -108,13 +104,13 @@
           <div class="modal-body">
             <form class="well" action="/register" method="post" accept-charset="UTF-8">
             <label> Name </label>
-            <input type="text" class="span4" placeholder="Enter a name (optional)"/> </br>
+            <input name="name" type="text" class="span4" placeholder="Enter a name (optional)"/> </br>
             <label> Username </label>
-            <input type="email" class="span4" placeholder="Enter an email address"/> </br>
+            <input name ="email" type="email" class="span4" placeholder="Enter an email address"/> </br>
             <label> Password </label> 
-            <input type="password" class="span4" placeholder="Enter a valid password."/> </br> 
+            <input name="password" type="password" class="span4" placeholder="Enter a valid password."/> </br> 
             <label> Confirm Password </label> 
-            <input type="confirm_password" class="span4" placeholder="Enter the password again."/> </br> </br>
+            <input name="confirm_password" type="password" class="span4" placeholder="Enter the password again."/> </br> </br>
             <button class="btn btn-primary">Sing up</button>    
             <button class="btn btn-danger" data-dismiss="modal" aria-hidden="true">Close</button>
           </form>
@@ -122,8 +118,7 @@
       </div>   
       
     <div class="content">      
-    <h1> MANIKANDAN </h1>    
-    <%- body %>
+      <%- body %>
     </div>
 
     <div class="footer">

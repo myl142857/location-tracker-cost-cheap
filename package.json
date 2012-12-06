@@ -22,7 +22,9 @@
     "geocoder": "0.1.0",
     "connect-mongodb": "1.1.1",
     "connect-timeout": "0.0.1",
-    "ejs-locals": "1.0.2"
+    "ejs-locals": "1.0.2",
+    "connect-flash": "0.1.0",
+    "crypto": ">= 0.0.0"    
   },
   "devDependencies": {
     "tobi": "0.3.2",

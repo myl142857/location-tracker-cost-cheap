@@ -1,7 +1,5 @@
 var mysql = require('mysql');
-var MYSQL_USERNAME = 'testuser';
-var MYSQL_PASSWORD = 'joliee';
-var HOST_NAME = 'instance31603.db.xeround.com';
+var crypto = require('crypto');
 
 // init;
 var client = mysql.createConnection({
