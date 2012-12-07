@@ -1,0 +1,78 @@
+<div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+      <a class="brand" style="margin-left:20px" href="/">Location Tracker</a>
+      <div class="nav-collapse">
+      <ul class="nav">
+        <% if (header.tab) { %>
+          <% if ( header.tab == 'home' ) { %>
+          <li class="active"> <a href="/">Home</a></li>
+          <li> <a href="/pricing">Pricing</a></li>
+          <li> <a href="/about">About</a></li>   
+
+          <% } if (header.tab == 'pricing' ){ %>
+          <li> <a href="/">Home</a></li>
+          <li class="active"> <a href="/pricing">Pricing</a></li>
+          <li> <a href="/about">About</a></li>   
+
+          <% } if (header.tab == 'about' ) { %>
+          <li> <a href="/">Home</a></li>
+          <li> <a href="/pricing">Pricing</a></li>
+          <li class="active"> <a href="/about">About</a></li>   
+          <% } %>
+
+        <% } else { %>
+          <li class="active"> <a href="/">Home</a></li>
+          <li> <a href="/pricing">Pricing</a></li>
+          <li> <a href="/about">About</a></li>   
+        <% } %>   
+    </ul>
+    <ul class="nav pull-right" style="margin-right:20px" >
+          <% if (!user) { %>
+            <li> <a href="#myModal" data-toggle="modal"> Sign Up </a></li>
+            <li class="divider-vertical"></li>
+            <li class="dropdown">
+            <a class="dropdown-toggle" href="#" data-toggle="dropdown">Sign In <strong class="caret"></strong></a>
+            <div class="dropdown-menu" style="padding: 15px; padding-bottom: 0px;">
+              <!-- Login form -->
+              <form class="well" action="/login" method="post" accept-charset="UTF-8">
+                <input name="email" type="text" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Username"/> </br>
+                <input name="password" type="password" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Password"/> </br>
+                <input id="user_remember_me" style="color:red; float: left; margin-right: 10px;" type="checkbox" value="1"/>Remember me</br>
+                <input class="btn btn-primary" style="clear: left; width: 100%; height: 32px; font-size: 13px;" type="submit" name="commit" value="Sign In" />
+              </form>
+            </div>
+          </li>
+          
+          <% } else { %>
+            <li> <a>Hello, <%= user.username %></a> </li>
+            <li class="divider-vertical"></li>
+            <li> <a href="/logout"> Logout </a></li>
+          <% } %>
+          </ul>
+     </div><!--/.nav-collapse -->
+  </div>
+</div>
+
+<div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="myModalLabel">Tracker Sign up</h3>
+  </div>
+  
+  <div class="modal-body">
+    <form class="well" action="/register" method="post" accept-charset="UTF-8">
+    <label> Name </label>
+    <input name="name" type="text" class="span4" placeholder="Enter a name (optional)"/> </br>
+    <label> Username </label>
+    <input name ="email" type="email" class="span4" placeholder="Enter an email address"/> </br>
+    <label> Password </label> 
+    <input name="password" type="password" class="span4" placeholder="Enter a valid password."/> </br> 
+    <label> Confirm Password </label> 
+    <input name="confirm_password" type="password" class="span4" placeholder="Enter the password again."/> </br> </br>
+
+    <button class="btn btn-primary">Sing up</button>    
+    <button class="btn btn-danger" data-dismiss="modal" aria-hidden="true">Close</button>
+  </form>
+  </div>
+  </div>   
