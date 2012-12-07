@@ -12,6 +12,7 @@ var flash = require('connect-flash');
 var app = express();
 var server = http.createServer(app);
 var sql_model = require('./db_helper');
+var models = require('./models');
 
 server.listen(3000);
 
@@ -49,18 +50,34 @@ app.configure(function(){
   app.use(express.static(__dirname + '/'));
 });
 
-db = mongoose.connect(app.set('db-uri'));
+models.defineModels(mongoose, function() {
+  app.LoginToken = LoginToken = mongoose.model('LoginToken');
+  db = mongoose.connect(app.set('db-uri'));
+})
 
-app.get('/', function(req, res) {
-  res.render('index1',{ user:null});
+app.get('/', loadUser, function(req, res) {
+  console.log(" ######### GET / ############ "+req.currentuser);
+  if(req.currentuser) {
+    // Show the users page.
+    res.redirect('user');
+  } else {
+    // Show index page
+    res.render('index1',{ user:null, header:{ tab:'home'} });
+  } 
 });
 
 app.get('/about', function(req, res) {
-  res.render('about',{ user:null });
+  res.render('about',{ user:null,header:{ tab:'about'} });
 });
 
 app.get('/pricing', function(req, res) {
-  res.render('pricing',{ user:null });
+  res.render('pricing',{ user:null,header:{ tab:'pricing'} });
+});
+
+app.get('/user', function(req, res) {
+  // Get the devices registered list.
+  console.log(" ######### GET /user ######### "+req.currentuser);
+  res.render('user',{ user: {username:req.currentuser } } );
 });
 
 app.get('/register', function(req, res) {
@@ -82,7 +99,8 @@ app.post('/register', function(req, res) {
     if( result != -1 && result != -2) {
         console.log(" ######### add user set the session sql user id ####### "+ result);
       req.session.sql_user_id = result;
-      res.render('user', { user: {username:"Manikandan"} });
+      req.currentuser = req.body.email;
+      res.redirect('user');
     } else {
       res.redirect('register');
     }
@@ -91,7 +109,7 @@ app.post('/register', function(req, res) {
 
 app.get('/login', function(req, res) {
   console.log(" ######### LOGIN GET ###########");
-  res.render('login',{ error: "Password not correct" });
+  res.render('login',{ error: "Incorrect credentials" });
 });
 
 app.post('/login', function(req, res) {
@@ -106,18 +124,21 @@ app.post('/login', function(req, res) {
       console.log(" ######### results obtained found email ########## ");
       if( sql_model.authenticate(req.body.password,results[0].salt,results[0].hashed_password) )  {
         // set the session with id.
-        console.log(" ######### PASSWORD MATCH ########## ");
+        console.log(" ######### PASSWORD MATCH ########## "+results[0].email+" : "+results[0].salt);
         req.session.user_id = results[0].id;
+        req.currentuser = results[0].email;
+
         if (req.body.remember_me) {
               var loginToken = new LoginToken({ email: results[0].email });
               loginToken.save(function() {
                 res.cookie('logintoken', loginToken.cookieValue, { expires: new Date(Date.now() + 2 * 604800000), path: '/' });
                 console.log(" ######### post /login Remember ME logintoken ########### "+loginToken.cookieValue);
-                res.redirect('/documents');
+                res.redirect('/user');
               });
            } else {
-              res.redirect('/documents');
-        }
+              console.log(" ######### PASSWORD MATCH redirect /user########## "+req.currentuser);
+              res.redirect('/user');
+           }
 
       } else {
         console.log(" ######### PASSWORD NOT MATCH ########## "); 
@@ -134,23 +155,65 @@ app.post('/login', function(req, res) {
 
 
 function loadUser(req, res, next) {
-console.log(" ####### Load user SESSION ########"+req.session.user_id+"  ::  "+req.session.sql_user_id);
+console.log(" ####### Load user SESSION ######## "+req.session.sql_user_id);
   // SQL model.
-  if( req.session.user_id) {
+  if( req.session.sql_user_id) {
     sql_model.findUserId(req.session.sql_user_id, function(results) {
-      if( results.length >0 )
+      if( results.length >0 ) {
         console.log(" ######## SQL findUserId result  ########## "+results[0].email+":"+results[0].salt+":"+results[0].hashed_password);
-      
+        // Set the session user id.
+        req.currentuser = results[0].email;
+        next();
+      } else {
+        console.log(" ####### Load user redirect /sessions/new ###### ");
+        res.redirect('/');        
+      }
+
     });
   } else if (req.cookies.logintoken) {
     console.log(" ####### Load user cookies login token ##########"+req.cookies.logintoken);
     authenticateFromLoginToken(req, res, next);
   } else {
-  console.log(" ####### Load user redirect /sessions/new ###### ");
+    console.log(" ####### Load user redirect /sessions/new ###### ");
     res.redirect('/');
   }
 } // End of loadUser.
 
+function authenticateFromLoginToken(req, res, next) {
+  var cookie = JSON.parse(req.cookies.logintoken);
+  console.log(" ########## authenticateFromLoginToken cookie ######### "+ JSON.stringify(cookie));
+  LoginToken.findOne({ email: cookie.email,
+                       series: cookie.series,
+                       token: cookie.token }, (function(err, token) {
+                       
+    console.log(" ########## LoginToken.findOne ######### "+ JSON.stringify(token)) ;                       
+    if (!token) {
+      res.redirect('/');
+      return;
+    }
+    
+    sql_model.findUser(token.email, function(results) {
+      if( results.length >0 ) {
+        console.log(" ######## SQL findUser result  ########## "+results[0].email+":"+results[0].salt+":"+results[0].hashed_password);
+        req.session.user_id = results[0].id;
+        req.currentUser = results[0].email;
+        token.token = token.randomToken();
+        console.log(" ########## Generate Random token ###### "+token.token);
+        token.save(function() {
+        console.log(" ########## Token obtained SAVE to cookie ######### "+ token.cookieValue);
+          res.cookie('logintoken', token.cookieValue, { expires: new Date(Date.now() + 2 * 604800000), path: '/' });
+          next();
+        });
+
+      } else {
+        console.log(" ######## SQL findUser NO result  ########## ");
+        next();
+      }
+      
+    }); // sql query
+  })); // LoginToken query
+
+}
 
 app.post('/update_location', function(request, response) {
   console.log( " ##########  request body ############ "+request.body.latitude+"   "+request.body.longitude+"  "+request.body.accuracy);

@@ -23,7 +23,35 @@
       /* IE10+ */
         background: radial-gradient(center, ellipse cover, #f2f9fe 0%, #d6f0fd 100%);
       /* W3C */        
-      }                
+      }  
+      #wrapper {
+        min-height:100%;
+        position:relative;
+      }
+
+      #content {
+        padding-bottom:150px;
+      }
+
+      #footer {
+        background: #f0fff0;
+        padding: 17px 0 18px 0;
+        border-top: 5px solid #0000;
+        width:100%;
+        text-align: center;
+        position:absolute;
+        bottom:0;
+        left:0;
+      }
+
+      #footer a {
+          color: #999999;
+      }
+
+      #footer a:hover {
+          color: #efefef;
+      }
+
     </style> 
 
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -32,21 +60,43 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <body>
+      <div id="wrapper">
       <div class="container">
         <div class="navbar navbar-fixed-top">
             <div class="navbar-inner">
               <div class="container">
                 <a class="brand" href="/">Location Tracker</a>
+                <% if (!user) { %>
+                <ul class="nav pull-right" style="margin-right:20px" >
+                  <li class="divider-vertical"></li>
+                  <li class="dropdown">
+                  <a class="dropdown-toggle" href="#" data-toggle="dropdown"> 
+                      Hello, <%= user.username %>
+                    <strong class="caret"></strong></a>
+                  <div class="dropdown-menu" style="padding: 15px; padding-bottom: 0px;">
+                    <!-- Login form -->
+                    <input class="btn btn-primary" style="clear:left; height: 32px; font-size: 13px;" type="submit" name="commit" value="Log out />
+                  </div>
+                  </li>
+                </ul>
+                <% }  %>
                </div><!--/.nav-collapse -->
               </div> 
             </div>
         </div>
 
-        <div class="content">
+        <div id="content">
           <div class="container">      
           <%- body %>
           </div>
         </div>
-      </div> <!-- div container -->
+      
+
+       <div id="footer">
+        <b>Copyright © 2012 Tracker. All rights reserved </b>
+        <p>Uses <a href="http://twitter.github.com/bootstrap/" rel="external">Twitter Bootstrap</a> and <a href="http://expressjs.com/" rel="external">Express</a> and <a href="http://nodejs.org/" rel="external">NodeJS</a> and <a href="http://socket.io/" rel="external">Socket.IO</a>.</p>
+      </div>    
+    </div> <!-- div container -->
+    </div>
     </body>                                                                                                                              
 </html> 
