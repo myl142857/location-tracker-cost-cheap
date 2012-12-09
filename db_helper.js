@@ -30,7 +30,7 @@ client.query('USE tracker_db');
             " latitude varchar(20) not null default 'unknown',"+
             " longitude varchar(20) not null default 'unknown',"+
             " accuracy varchar(20) not null default 'unknown',"+
-            " location varchar(100) not null default 'unknown',"+
+            " location varchar(100) default 'unknown',"+
             " primary key (id)"+
             ");"; 
 
@@ -136,31 +136,26 @@ randomToken = function() {
 // Phone number table.
 
 // Add phonenumber
-exports.add_phone_number = function(user_id,phonenumber) {
+exports.add_device = function(user_id,phonenumber,push_id,callback) {
 
 // Generate access code with a random number.
 var accesscode = Math.floor(Math.random()*10000001);
-
-client.query("insert into phonenumbers (user_id,phoenumber,accesscode,authenticated) values (?,?,?,?)", 
-        [user_id,phonenumber,accesscode,0], 
+console.log(" ####### SQL add device ########### "+user_id+" ::  "+phonenumber+"  :  "+push_id);
+client.query("insert into devices (user_id,phonenumber,accesscode,push_notification_id,authenticated) values (?,?,?,?,?)", 
+        [user_id, phonenumber, accesscode, push_id, 0], 
         function(err, info) {
-        
-          if( err )  {
-            throw err;
-
-            callback(-1);
-            return;
-          }
-        
           // callback function returns last insert id
-          callback(info.insertId);
+          if( err) {
+            callback(err,null);
+          } else {
+            callback(err,info.insertId);
+          }
       });
-
 }
 
 //Update phonumber: update authenticated to true/false with phonenumber as key.
-exports.updatePhonenumberWithPh = function(phonenumber,authenticate) {
-    client.query( "update phonumbers set authenticated=? where phonumber=?",
+exports.updateDeviceWithPh = function(phonenumber,authenticate,callback) {
+    client.query( "update devices set authenticated=? where phonumber=?",
       [authenticate,phonenumber],
       function( err, results, fields)  {
           if( err) {
@@ -169,14 +164,12 @@ exports.updatePhonenumberWithPh = function(phonenumber,authenticate) {
       console.log(" ####### GET user  ########"+JSON.stringify(results));
       callback(results);
   });
-
-
 }
 
 
 // Get phonenumber. user_id as key
-exports.getPhonenumberByUserId = function(user_id) {
-  client.query( "select * from phonenumbers where user_id=?",
+exports.getDeviceByUserId = function(user_id,callback) {
+  client.query( "select * from devices where user_id=?",
       [user_id],
       function( err, results, fields)  {
           if( err) {
@@ -185,13 +178,11 @@ exports.getPhonenumberByUserId = function(user_id) {
       console.log(" ####### GET user  ########"+JSON.stringify(results));
       callback(results);
   });
-
-
 }
 
 // Get phonenumber. phonenumber_id as key
-exports.getPhonenumberById = function(id){
-  client.query( "select * from phonenumbers where id=?",
+exports.getDeviceById = function(id,callback){
+  client.query( "select * from devices where id=?",
       [id],
       function( err, results, fields)  {
           if( err) {
@@ -200,13 +191,23 @@ exports.getPhonenumberById = function(id){
       console.log(" ####### GET user  ########"+JSON.stringify(results));
       callback(results);
   });
+}
 
-
+// Get phonenumber. phonenumber_id as key
+exports.getAllDevices = function(user_id,callback){
+  client.query( "select * from devices where user_id=?",
+      [user_id],function( err, results, fields)  {
+          if( err) {
+            throw err;
+          }
+      console.log(" ####### GET user  ########"+JSON.stringify(results));
+      callback(results);
+  });
 }
 
 // Delete phonenumber.
-exports.deletePhonumerById = function(id) {
-  client.query( " delete from phonumbers where id=?",
+exports.deletePhonumerById = function(id,callback) {
+  client.query( " delete from devices where id=?",
       [id],
       function( err, results, fields)  {
           if( err) {

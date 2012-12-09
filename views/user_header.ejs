@@ -2,8 +2,7 @@
 <html>                           
   <head>                                            
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Tracker</title>
-
+    <title><%= title %></title>
     <style type="text/css">                    
       
       html , body {
@@ -24,25 +23,25 @@
         background: radial-gradient(center, ellipse cover, #f2f9fe 0%, #d6f0fd 100%);
       /* W3C */        
       }  
-      #wrapper {
+     
+     #wrapper {
         min-height:100%;
         position:relative;
       }
 
       #content {
         margin:20px;
-        padding-bottom:150px;
+        padding-bottom:30px;
       }
 
       #footer {
         background: #f0fff0;
         padding: 10px 0 0 0;
-        border-top: 5px solid #0000;
+        bottom:0px;
         width:100%;
+        height:30px;
         text-align: center;
         position:absolute;
-        bottom:0;
-        left:0;
       }
 
       #footer a {
@@ -62,27 +61,29 @@
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <body>
       <div id="wrapper">
-      <div class="container">
         <div class="navbar navbar-fixed-top">
             <div class="navbar-inner">
-                <a class="brand" style="margin-left:20px" href="/">Location Tracker</a>
-               </div><!--/.nav-collapse -->
-            </div>
-        </div>
+                <a class="brand" style="margin-left:10px" href="/">Location Tracker</a>
+                <% if (user.username) { %>
+                  <div class="pull-right btn-group" style="margin-right:20px">
+                    <a class="btn btn-primary" href="/settings"><i class="icon-cog icon-white"></i> Settings</a>
+                    <a class="btn btn-primary" href="#"><i class="icon-user icon-white"></i> <%= user.username %></a>
+                    <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                      <li><a href="/logout"><i class="icon-off"></i> logout</a></li>
+                    </ul>
+                  </div>
+                <% }  %> 
+            </div>  <!-- nav-inner -->
+        </div>  <!-- nav-bar top -->
 
         <div id="content">
-          <div class="container">      
           <%- body %>
-          </div>
-        </div>
-      
+        </div> <!-- div content -->
 
-       <div id="footer">
-        <p><b>Copyright © 2012 Tracker. All rights reserved </b>
-        <small>Uses <a href="http://twitter.github.com/bootstrap/" rel="external">Twitter Bootstrap</a> and <a href="http://expressjs.com/" rel="external">Express</a> and <a href="http://nodejs.org/" rel="external">NodeJS</a> and <a href="http://socket.io/" rel="external">Socket.IO</a>.</small></p>
-
-      </div>    
-    </div> <!-- div container -->
-    </div>
-    </body>                                                                                                                              
+        <div id="footer">
+          <b>Copyright © 2012 Tracker. All rights reserved </b>
+        </div>    
+    </div>  <!-- wrapper  -->  
+  </body>                                                                                                                              
 </html> 

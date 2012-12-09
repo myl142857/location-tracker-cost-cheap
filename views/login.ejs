@@ -2,12 +2,12 @@
 <div class="span10">
 	<h1> Login </h1>
 	<form class="well" action="/login" method="post" accept-charset="UTF-8" onsubmit="return CheckBeforeSubmission();">
-	<h5 id="error1" style="color:red"> <%= error %></h5>
-	<h5 id="error" style="color:red"></h5>
-	<input id="email" name="email" type="text" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Username"/> </br>
-	<input id="password" name="password" type="password" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Password"/> </br>
-	<input id="user_remember_me" style="color:red; float: left; margin-right: 10px;" type="checkbox" value="1"/>Remember me </br></br>
-	<input class="btn btn-primary" style="clear:left; height: 32px; font-size: 13px;" type="submit" name="commit" value="Sign In" />
+		<h5 id="error1" style="color:red"> <%= error %></h5>
+		<h5 id="error" style="color:red"></h5>
+		<input id="email" name="email" type="text" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Username"/> </br>
+		<input id="password" name="password" type="password" style="margin-bottom: 15px;" size ="30" class="span3" placeholder="Password"/> </br>
+		<input id="user_remember_me" style="color:red; float: left; margin-right: 10px;" type="checkbox" value="1"/>Remember me </br></br>
+		<button type="submit" class="btn btn-primary"><i class="icon-user icon-white"></i> Sign In </button>
 	</form>
 </div>
 
