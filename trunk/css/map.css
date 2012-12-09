@@ -1,1 +1,4 @@
-#map_canvas { height: 100% } 
+#map_canvas { 
+	height: 500px;
+	border: 5px solid white ;
+ } 

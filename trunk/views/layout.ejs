@@ -8,7 +8,7 @@
       
       html , body {
         font: normal 0.9em arial, helvetica;
-		    padding-top: 40px;
+		    padding-top: 30px;
         height:100%;
         background: #f2f9fe;
         background: -moz-radial-gradient(center, ellipse cover, #f2f9fe 0%, #d6f0fd 100%);
@@ -30,9 +30,11 @@
       #wrapper {
         min-height:100%;
         position:relative;
+        padding:30px;
       }
 
       #content {
+        margin:20px;
         padding-bottom:150px;
       }
 
@@ -45,7 +47,7 @@
 
       #footer {
         background: #f0fff0;
-        padding: 17px 0 18px 0;
+        padding: 10px 0 0 0;
         border-top: 5px solid #0000;
         width:100%;
         text-align: center;
@@ -59,7 +61,7 @@
       }
 
       #footer a:hover {
-          color: #efefef;
+          color: #ff0000;
       }
     </style> 
 
@@ -68,20 +70,18 @@
     <%-scripts%>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
     <script src="bootstrap/js/bootstrap.min.js"></script>
-<body>
-  <div id="wrapper">
-    <div class="container">
-      <%- partial('header.ejs') %>
-      <div id="content">      
-        <%- body %>
-      </div>
-    </div>
+    <body>
+      <div id="wrapper">
+          <%- partial('header.ejs') %>
+          <div id="content">      
+            <%- body %>
+          </div>
 
-    <div id="footer">
-        <b>Copyright © 2012 Tracker. All rights reserved </b>
-        <p>Uses <a href="http://twitter.github.com/bootstrap/" rel="external">Twitter Bootstrap</a> and <a href="http://expressjs.com/" rel="external">Express</a> and <a href="http://nodejs.org/" rel="external">NodeJS</a> and <a href="http://socket.io/" rel="external">Socket.IO</a>.</p>
-    </div>    
+        <div id="footer">
+            <p><b>Copyright © 2012 Tracker. All rights reserved </b>
+            <small>Uses <a href="http://twitter.github.com/bootstrap/" rel="external">Twitter Bootstrap</a> and <a href="http://expressjs.com/" rel="external">Express</a> and <a href="http://nodejs.org/" rel="external">NodeJS</a> and <a href="http://socket.io/" rel="external">Socket.IO</a>.</small></p>
+        </div>    
 
-  </div> <!-- div wrapper -->
-  </body>                                                                                                                              
+      </div> <!-- div wrapper -->
+    </body>                                                                                                                              
 </html> 

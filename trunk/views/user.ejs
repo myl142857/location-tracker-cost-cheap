@@ -1,12 +1,17 @@
-<% layout('layout_header') -%>
+<% layout('user_header') -%>
 <% stylesheet('css/map.css') -%>
 <% script('https://maps.googleapis.com/maps/api/js?key=AIzaSyA9hZO1Yz7lBgNJiKfu5qznUxk2EhuqbxI&sensor=true') -%>
 <% script('http://localhost:3000/socket.io/socket.io.js') -%>
-
-<br><br>
-<h1> User Signed IN </h1>
-<input type='button' value='Add Phone Number' id='add_phone'></div>
-<h1>Supplies</h1>
+<table class="table">
+	<tr>
+		<td>
+			<div width="75%" id="map_canvas"/>
+		</td>
+		<td width="25%" id="table_location"> 
+				list of deivces
+		</td>
+	</tr>
+</table>
 
 <form class = "well">
     <b>Create new location</b>
@@ -16,22 +21,22 @@
     <button class="btn btn-primary" id='save' >Save</button>
 </form>
 
-<table class="table">
-	<tr>
-		<td class="span7" id="table_location"> 
-		</td>
-		<td>
-			<div id="map_canvas" style=" height:400px"/>
-		</td>
-	</tr>
-</table>
-
 <script type="text/javascript"> 
 
 $(document).ready(function () {
-	alert(' Document ready ');
-    $("#add_phone").click(function() {
-    	alert(' clicked save ');
-    });
+
+	$("#add_phone").click(function() {
+		alert(' clicked save '+$("#device").val());
+	});
+
+	var mapOptions = {
+	  center: new google.maps.LatLng(-34.397, 150.644),
+	  zoom: 8,
+	  mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+
+	var map = new google.maps.Map(document.getElementById("map_canvas"),mapOptions);
+
 });
+
 </script>  
