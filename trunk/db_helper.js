@@ -136,13 +136,13 @@ randomToken = function() {
 // Phone number table.
 
 // Add phonenumber
-exports.add_device = function(user_id,phonenumber,push_id,callback) {
+exports.add_device = function(user_id,name,phonenumber,push_id,callback) {
 
 // Generate access code with a random number.
 var accesscode = Math.floor(Math.random()*10000001);
 console.log(" ####### SQL add device ########### "+user_id+" ::  "+phonenumber+"  :  "+push_id);
-client.query("insert into devices (user_id,phonenumber,accesscode,push_notification_id,authenticated) values (?,?,?,?,?)", 
-        [user_id, phonenumber, accesscode, push_id, 0], 
+client.query("insert into devices (user_id,name,phonenumber,accesscode,push_notification_id,authenticated) values (?,?,?,?,?,?)", 
+        [user_id, name, phonenumber, accesscode, push_id, 0], 
         function(err, info) {
           // callback function returns last insert id
           if( err) {

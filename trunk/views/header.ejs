@@ -1,6 +1,6 @@
 <div class="navbar navbar-fixed-top">
   <div class="navbar-inner">
-      <a class="brand" style="margin-left:20px" href="/">Location Tracker</a>
+      <a class="brand" style="margin-left:20px" href="/">Tracker<sup>[beta]</sup></a>
       <div class="nav-collapse">
       <ul class="nav">
         <% if (header.tab) { %>
@@ -27,13 +27,14 @@
         <% } %>   
     </ul>
     <ul class="nav pull-right" style="margin-right:20px;" >
-        <li> <a href="/register"> <i class="icon-user icon-white"></i>Create Account </a></li>
-        <li style="margin-top:10px;">
-        <form class="form-search" action="/login" method="post" accept-charset="UTF-8">
-          <input type="email" name="email" class="input-small search-query" placeholder="Email"> 
-          <input type="password" name="password"  class="input-small search-query" placeholder="Password">
-          <button type="submit" style="margin-top:3px" class="btn btn-primary btn-small"> <i class="icon-lock icon-white"></i>Login </button>
-        </form> </li>        
+        <li> <a href="/register">Create Account </a></li>
+        <li style="margin-top:10px">
+          <form class="form-inline" action="/login" method="post" accept-charset="UTF-8">
+            <input type="text" name="email" class="input-small search-query" placeholder="Email">
+            <input type="password" name="password" class="input-small search-query" placeholder="Password">
+            <button type="submit" class="btn1 btn-small btn-primary">Login</button>
+          </form>        
+        </li>        
     </ul>
      </div><!--/.nav-collapse -->
   </div>

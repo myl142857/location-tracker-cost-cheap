@@ -2,40 +2,116 @@
 
 
 <div class='row'>	
-	<div class="span3 pull-left">
-		<h5>Settings </h5>
+	<div class="span4 offset1 pull-left">
+		<h1>My Devices</h1>
 	</div>
 	<div class="span3 pull-right">
 		<form action="/user" method="delete" accept-charset="UTF-8">
-			<button type="submit" class="btn btn-primary">
+			<button type="submit" class="btn btn-danger">
   				<i class="icon-trash icon-white"></i> Delete Accout
 			</button>
 		</form>
 	</div>
 </div>
 
+<br/>
 
-<div class='row'>	
-	<div class="span5">
-		<form action="/device" method="post" accept-charset="UTF-8" onsubmit="return CheckBeforeSubmission();">
-			<input id="device" name="device" type="text" size ="30" placeholder="phonenumber.eg 842-234-2823"/>
-			<button type="submit" class="btn btn-primary">
-  				<i class="icon-plus icon-white"></i> Add Device
-			</button>
-		</form>
-	</div>
-</div>
+<div class="row">
+    <div class="span10 offset1">    	
+        <form action="/device" method="post" onsubmit="return CheckBeforeSubmission();">
+         <input type="text" id="name" name="name" class="input search-query" placeholder="Name"> <br/><br/>
+         <input type="tel" id="device" name="device" class="input search-query" placeholder="Phone number"><br/> <br/>
+		 <select name="countrycode">
+		 <option value="1" selected>USA (+1) 
+		 <option value="54">Argentina (+54) 
+		 <option value="61">Australia (+61) 
+		 <option value="43">Austria (+43) 
+		 <option value="32">Belgium (+32) 
+		 <option value="55">Brazil (+55) 
+		 <option value="855">Cambodia (+855) 
+		 <option value="237">Cameroon (+237) 
+		 <option value="1">Canada (+1) 
+		 <option value="56">Chile (+56) 
+		 <option value="86">China (+86) 
+		 <option value="57">Colombia (+57) 
+		 <option value="45">Denmark (+45) 
+		 <option value="2463">Diego Garcia (+2463) 
+		 <option value="358">Finland (+358) 
+		 <option value="33">France (+33) 
+		 <option value="594">French Guiana (+594) 
+		 <option value="689">French Polynesia (+689) 
+		 <option value="7880">Georgia (+7880) 
+		 <option value="49">Germany (+49) 
+		 <option value="30">Greece (+30) 
+		 <option value="299">Greenland (+299) 
+		 <option value="852">Hong Kong (+852) 
+		 <option value="36">Hungary (+36) 
+		 <option value="354">Iceland (+354) 
+		 <option value="91">India (+91) 
+		 <option value="62">Indonesia (+62) 
+		 <option value="81">Japan (+81) 
+		 <option value="850">Korea North (+850) 
+		 <option value="82">Korea South (+82) 
+		 <option value="965">Kuwait (+965) 
+		 <option value="856">Laos (+856) 
+		 <option value="60">Malaysia (+60) 
+		 <option value="960">Maldives (+960) 
+		 <option value="52">Mexico (+52) 
+		 <option value="31">Netherlands (+31) 
+		 <option value="64">New Zealand (+64) 
+		 <option value="47">Norway (+47) 
+		 <option value="63">Philippines (+63) 
+		 <option value="48">Poland (+48) 
+		 <option value="351">Portugal (+351) 
+		 <option value="7">Russia (+7) 
+		 <option value="966">Saudi Arabia (+966) 
+		 <option value="65">Singapore (+65) 
+		 <option value="27">South Africa (+27) 
+		 <option value="34">Spain (+34) 
+		 <option value="94">Sri Lanka (+94) 
+		 <option value="46">Sweden (+46) 
+		 <option value="41">Switzerland (+41) 
+		 <option value="886">Taiwan (+886) 
+		 <option value="66">Thailand (+66) 
+		 <option value="90">Turkey (+90) 
+		 <option value="44">UK (+44) 
+		 <option value="971">United Arab Emirates (+971) 
+		 <option value="1">USA (+1) 
+		 <option value="379">Vatican City (+379) 
+		 <option value="84">Vietnam (+84) 
+		 </select> <br/><br/>  
+  		 <button type="submit" class="btn btn-success"><i class="icon-plus-sign icon-white"></i>Add Device</button>
+        </form>
 
-<ul>
-<% for(var i=0; i<devices.length; i++) {%>
-   <li><%= devices[i] %></li>
-<% } %>
-</ul>
 
+	  <table class="table">
+	    <tbody>
+			<% for(var i=0; i<devices.length; i++) {%>
+			   <tr>
+			   	<td style="border-top:none">
+			   		<div class="row well">
+				   		<h3> <%= devices[i].name %> </h3> 
+				   		<h4> <%= devices[i].phonenumber %> </h4>
+				   		<button type="button" class="btn btn-small btn-danger disabled" disabled="disabled">Not Authenticated</button>
+				   		<button type="button" class="btn btn-small btn-primary">Send Access Code</button>
+				   		<div class="pull-right">
+				   			<a class="btn" href="/user"><i class="icon-large icon-map-marker"></i></a>
+				   			<a class="btn" href="/user/delete"><i class="icon-large icon-trash"></i></a>
+				   		</div>
+			   		</div>
+			   	</td>
+			   </tr>
+			<% } %>
+	    </tbody>
+	  </table>
+	  </div>
+	  </div>
 <script type="text/javascript">
     function CheckBeforeSubmission()
     {
-        if( ! $('#device').val() ) {
+    	if( ! $('#name').val() ) {
+    		alert('Please enter a name');
+        } else if( ! $('#device').val() ) {
             alert('Please enter a valid phone number');
         } else {
             return true;

@@ -170,11 +170,7 @@ app.get('/logout', loadUser, function(req, res){
 app.get('/settings', loadUser, function(req, res){
   console.log(" ######### GET /user/settings ########### "+req.currentuser+"  ::  "+req.session.user_id);
   sql_model.getAllDevices(req.session.user_id,function(results) {
-    var deviceslist = [];
-    for(var i = 0; i < results.length; i++) {
-      deviceslist[i] = results[i].phonenumber;
-    }       
-    res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,devices:deviceslist });  
+    res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,devices:results});  
   });                    
 });
 
@@ -196,7 +192,7 @@ app.post('/device', loadUser, function(req, res) {
   console.log("######### POST /user/device ########## "+req.body.device+" ::  "+req.session.user_id);
     // Get the user id, device: Add to phone number table.
     // Add to sql_model.
-    sql_model.add_device(req.session.user_id,req.body.device,"aas019jasjer-123923jdjdfuej",function(err,result) {
+    sql_model.add_device(req.session.user_id,req.body.name,req.body.device,"aas019jasjer-123923jdjdfuej",function(err,result) {
       console.log(" ######### add device ####### "+ result);
       var deviceslist = [];
 
@@ -213,11 +209,7 @@ app.post('/device', loadUser, function(req, res) {
 
       // Get all the devices list. 
       sql_model.getAllDevices(req.session.user_id,function(results) {
-        for(var i = 0; i < results.length; i++) {
-          deviceslist[i] = results[i].phonenumber;
-        }       
-        console.log(" ####### DEVICES LIST ####### "+deviceslist);
-        res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,devices:deviceslist });
+        res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,devices:results });
       });   // Get all device.
 
     }); // Add device 
@@ -226,7 +218,6 @@ app.post('/device', loadUser, function(req, res) {
 
 // Get devices list
 app.get('/devices', loadUser, function(req, res) {
-
     console.log("######### POST /user/device ########## "+req.body.device+" ::  "+req.session.user_id);
     res.redirect('/index');
 });

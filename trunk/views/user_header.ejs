@@ -39,7 +39,10 @@
       #footer a:hover {
           color: #ff0000;
       }
-
+      
+      .table th, .table td { 
+           border-top: none; 
+       }
     </style> 
 
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -51,14 +54,15 @@
       <div id="wrapper">
         <div class="navbar navbar-fixed-top">
             <div class="navbar-inner">
-                <a class="brand" style="margin-left:10px" href="/">Location Tracker</a>
+                <a class="brand" style="margin-left:10px" href="/">Tracker<sup>[beta]</sup></a>
+
                 <% if (user.username) { %>
                   <div class="pull-right btn-group" style="margin-right:20px">
-                    <a class="btn btn-primary" href="/settings"><i class="icon-cog icon-white"></i> Settings</a>
-                    <a class="btn btn-primary" href="#"><i class="icon-user icon-white"></i> <%= user.username %></a>
+                    <a class="btn btn-success" href="/settings"><i class="icon-cog icon-white"></i> Settings</a>
+                    <a class="btn btn-success" href="#"><i class="icon-user icon-white"></i> <%= user.username %></a>
                     <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></a>
                     <ul class="dropdown-menu">
-                      <li><a href="/logout"><i class="icon-off"></i> logout</a></li>
+                      <li><a href="/logout"><i class="icon-off "></i> logout</a></li>
                     </ul>
                   </div>
                 <% }  %> 
