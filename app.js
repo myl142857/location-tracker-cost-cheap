@@ -84,6 +84,10 @@ app.get('/register', function(req, res) {
   res.render('register');
 });
 
+app.get('/help', function(req, res) {
+  res.render('help');
+});
+
 app.post('/register', function(req, res) {
 
   // Store the user details.
