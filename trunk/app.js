@@ -81,7 +81,7 @@ app.get('/pricing', function(req, res) {
 
 app.get('/register', function(req, res) {
   console.log(" ######### GET /register ########### ");
-  res.render('register', { error: 'Password & Confirm password not correct' });
+  res.render('register');
 });
 
 app.post('/register', function(req, res) {
