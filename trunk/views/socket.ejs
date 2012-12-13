@@ -1,0 +1,46 @@
+    <script type="text/javascript">
+		$(document).ready(function() {
+
+			var socket  = io.connect('http://localhost:3000');
+
+	      	$('#save').click(function() {
+		        
+		        if ($('#latitude').val() == '' || $('#longitude').val() == '' || $('#accuracy').val == '' ) {
+		          return alert('Please enter both latitude & longitude!');
+		        }
+
+		        var data = {
+		          latitude: $('#latitude').val(),
+		          longitude: $('#longitude').val(),
+		          accuracy: $('#accuracy').val()
+		        };
+
+		        socket.emit('add location', data);
+		        $('#latitude').val('');
+		        $('#longitude').val('');
+		        $('#accuracy').val('');
+	        });
+
+	      	socket.on('populate', function(data) {
+		        alert( ' ######### populate ############## ');
+		        var out = "";
+		        var row = "";
+		        row += '<table border="1" class="table table-striped" ><thead><tr><th>Latitude</th><th>Longitude</th><th>Accuracy</th><th>Location</th></tr></thead>';
+		        $.each(data, function(i, obj) {
+		          out += "<li> lat:"+obj.latitude+" lng:"+obj.longitude+" Accuracy:"+obj.accuracy+"</li>";
+		          row += "<tr> <td>"+obj.latitude+" </td> <td>"+obj.longitude+"</td><td>"+obj.accuracy+"</td><td>"+ obj.location+ "</td></tr>";
+		        });
+		        row += '</table>';
+		        //$('#locations').html(out);
+		        //$('#table_location').html(row);
+		        document.getElementById('table_location').innerHTML = row;
+		    });
+
+	    	var mapOptions = {
+	          center: new google.maps.LatLng(-34.397, 150.644),
+	          zoom: 8,
+	          mapTypeId: google.maps.MapTypeId.ROADMAP
+	        };
+	      	var map = new google.maps.Map(document.getElementById("map_canvas"),mapOptions);
+      	});
+    </script>

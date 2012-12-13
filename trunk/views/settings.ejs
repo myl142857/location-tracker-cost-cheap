@@ -1,4 +1,4 @@
-<% layout('user_header') -%>
+<% layout('device_header') -%>
 
 
 <div class='row'>	
@@ -18,9 +18,10 @@
 
 <div class="row">
     <div class="span10 offset1">    	
-        <form action="/device" method="post" onsubmit="return CheckBeforeSubmission();">
+        <form id="device_form" onsubmit="return CheckBeforeSubmission();">
          <input type="text" id="name" name="name" class="input search-query" placeholder="Name"> <br/><br/>
-         <input type="tel" id="device" name="device" class="input search-query" placeholder="Phone number"><br/> <br/>
+         <input type="tel" id="device" name="device" class="input search-query" placeholder="Phone number">         
+         <br/> <br/>
 		 <select name="countrycode">
 		 <option value="1" selected>USA (+1) 
 		 <option value="54">Argentina (+54) 
@@ -79,10 +80,12 @@
 		 <option value="1">USA (+1) 
 		 <option value="379">Vatican City (+379) 
 		 <option value="84">Vietnam (+84) 
-		 </select> <br/><br/>  
-  		 <button type="submit" class="btn btn-success"><i class="icon-plus-sign icon-white"></i>Add Device</button>
+		 </select> <br/> <br/>
+  		 <button type="submit" id="add_device" class="btn btn-success" data-loading-text="Adding Device..."><i class="icon-plus-sign icon-white"></i>Add Device</button> 
+  		 <h4 id="error" style="color:red;display:none;"></h4> 		   		 
         </form>
-
+        <br/>
+        
 
 	  <table class="table">
 	    <tbody>
@@ -92,11 +95,16 @@
 			   		<div class="row well">
 				   		<h3> <%= devices[i].name %> </h3> 
 				   		<h4> <%= devices[i].phonenumber %> </h4>
-				   		<button type="button" class="btn btn-small btn-danger disabled" disabled="disabled">Not Authenticated</button>
-				   		<button type="button" class="btn btn-small btn-primary">Send Access Code</button>
+				   		<% if (devices[i].authenticated == 0) { %>
+				   			<button type="button" class="btn btn-small btn-danger disabled" disabled="disabled"><i class="icon-remove icon-white"></i> Not Authenticated</button>
+				   		<% } else { %>
+							<button type="button" class="btn btn-small btn-success disabled" disabled="disabled"><i class="icon-ok icon-white"></i> Not Authenticated</button>
+				   		<% } %>
+				   		
+				   		<button type="button" class="btn btn-small btn-primary"><i class="icon-envelope icon-white"></i>Send Access Code</button>
 				   		<div class="pull-right">
-				   			<a class="btn" href="/user"><i class="icon-large icon-map-marker"></i></a>
-				   			<a class="btn" href="/user/delete"><i class="icon-large icon-trash"></i></a>
+				   			<a class="btn" href="/device"+<%= devices[i].phonenumber%> > <i class="icon-large icon-map-marker"></i></a>
+				   			<a class="btn" id="device_delete"><i class="icon-large icon-trash"></i></a>
 				   		</div>
 			   		</div>
 			   	</td>
@@ -106,6 +114,7 @@
 	  </table>
 	  </div>
 	  </div>
+
 <script type="text/javascript">
     function CheckBeforeSubmission()
     {
@@ -120,4 +129,102 @@
     }
 </script>
 
+<script type="text/javascript">
+
+$('#add_device').button();
+$('#error').hide();
+$('#add_device').click(function() {
+    $(this).button('loading');
+});
+
+$('#device_delete').click(function() {
+	alert("Delete clicked");
+});
+
+$("#device_form").submit(function(event){
+	$('#error').hide();
+
+    var $form = $(this),
+        $inputs = $form.find("input, select, button, textarea"),
+        serializedData = $form.serialize();
+
+    $inputs.attr("disabled", "disabled");
+
+    // fire post request to /device
+    $.ajax({
+        url: "/device",
+        type: "post",
+        data: serializedData,
+        success: function(response, textStatus, jqXHR){
+            // log a message to the console
+            if( response.code) {
+            	$('#error').show();
+            	if( response.code == 'ER_DUP_ENTRY') {
+            		$('#error').html('ERROR:Number already added');
+            	} else {
+            		$('#error').html('ERROR:Unable to add device');
+            	}
+            } else {
+            	 $('#device').val('');
+            	 $('#name').val('');
+            }
+            $('#add_device').button('reset');
+        },
+        error: function(jqXHR, textStatus, errorThrown){
+        	alert(" Error while submitting post "+testStatus+"  : "+errorThrown);
+        },
+        complete: function(){
+            // enable the inputs
+            $inputs.removeAttr("disabled");
+        }
+    });
+
+    // prevent default posting of form
+    event.preventDefault();
+});
+
+$("#device_delete").submit(function(event){
+	$('#error').hide();
+
+    var $form = $(this),
+        $inputs = $form.find("input, select, button, textarea"),
+        serializedData = $form.serialize();
+
+    $inputs.attr("disabled", "disabled");
+
+    // fire post request to /device
+    $.ajax({
+        url: "/device",
+        type: "delete",
+        data: serializedData,
+        success: function(response, textStatus, jqXHR){
+            // log a message to the console
+            if( response.code) {
+            	$('#error').show();
+            	if( response.code == 'ER_DUP_ENTRY') {
+            		$('#error').html('ERROR:Number already added');
+            	} else {
+            		$('#error').html('ERROR:Unable to add device');
+            	}
+            } else {
+            	 $('#device').val('');
+            	 $('#name').val('');
+            }
+            $('#add_device').button('reset');
+        },
+        error: function(jqXHR, textStatus, errorThrown){
+        	alert(" Error while submitting post "+testStatus+"  : "+errorThrown);
+        },
+        complete: function(){
+            // enable the inputs
+            $inputs.removeAttr("disabled");
+        }
+    });
+
+    // prevent default posting of form
+    event.preventDefault();
+});
+
+
+</script>
 

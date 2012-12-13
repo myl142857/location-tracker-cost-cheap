@@ -1,13 +1,20 @@
-<% layout('user_header') -%>
+<% layout('device_header') -%>
 <% stylesheet('css/map.css') -%>
 <% script('https://maps.googleapis.com/maps/api/js?key=AIzaSyA9hZO1Yz7lBgNJiKfu5qznUxk2EhuqbxI&sensor=true') -%>
 <% script('http://localhost:3000/socket.io/socket.io.js') -%>
+
+<div class='row'>	
+	<div class="span4 pull-left">
+		<h3>Movement Capture</h3>
+	</div>
+</div>
+
 <table class="table">
 	<tr>
-		<td>
+		<td style="border-top:none">
 			<div width="75%" id="map_canvas"/>
 		</td>
-		<td width="25%" id="table_location"> 
+		<td style="border-top:none" width="25%" id="table_location"> 
 				list of deivces
 		</td>
 	</tr>

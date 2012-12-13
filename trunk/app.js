@@ -166,6 +166,21 @@ app.get('/logout', loadUser, function(req, res){
   res.redirect('/index');
 });
 
+// Delete a device.
+app.delete('/user', loadUser, function(req, res){
+  console.log(" ######### DELETE /device ########### ");
+
+  // Delete the device with id.
+  sql_model.deletePhonumerById( id, function( result) {
+      // On sucess, redirect to settings page.
+      // Get all the devices list. 
+      sql_model.getAllDevices(req.session.user_id,function(results) {
+        res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,devices:results });
+      }); 
+ });
+
+});
+
 // Settings page
 app.get('/settings', loadUser, function(req, res){
   console.log(" ######### GET /user/settings ########### "+req.currentuser+"  ::  "+req.session.user_id);
@@ -177,13 +192,16 @@ app.get('/settings', loadUser, function(req, res){
 app.get('/user', loadUser, function(req, res) {
   // Get the devices registered list.
   console.log(" ######### GET /user ######### "+req.currentuser);
-  res.render('user',{ user: {username:req.currentuser },title:req.currentuser } );
+  res.render('user',{ user: {username:req.currentuser},title:req.currentuser } );
 });
 
-// Settings page
+// Device page:: Phonenumber is input.
 app.get('/device', loadUser, function(req, res){
   console.log(" ######### GET /device ########### ");
-  res.redirect('/index');
+  // Send devices details & location details. 
+  var deviceData;
+  var locationsList;
+  res.render('device',{ title:req.currentuser, user: {username:req.currentuser}, device: deviceData,locations:locationsList } );
 });
 
 // Create a device 
@@ -193,26 +211,29 @@ app.post('/device', loadUser, function(req, res) {
     // Get the user id, device: Add to phone number table.
     // Add to sql_model.
     sql_model.add_device(req.session.user_id,req.body.name,req.body.device,"aas019jasjer-123923jdjdfuej",function(err,result) {
-      console.log(" ######### add device ####### "+ result);
-      var deviceslist = [];
-
+      res.contentType('application/json');
       if( err )  {
-          console.log(" Obtained error ####### ");
-          if(err.code) {
-            if( err.code == 'ER_DUP_ENTRY') {
-              console.log(" ########## err ER_DUP_ENTRY FOUND ######### ");
-              // TODO throw flash message. device already added.
-            }
-          }
-          throw err;
+          res.send(JSON.stringify(err));
+      } else {
+        res.send(JSON.stringify(result));
       }
-
-      // Get all the devices list. 
-      sql_model.getAllDevices(req.session.user_id,function(results) {
-        res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,devices:results });
-      });   // Get all device.
-
     }); // Add device 
+  console.log("######### POST /user/device FUNCTION ENDS ########## ");
+});
+
+// Delete a device.
+app.delete('/device', loadUser, function(req, res){
+  console.log(" ######### DELETE /device ########### ");
+
+  // Delete the device with id.
+  sql_model.deletePhonumerById( id, function( err,result) {
+      res.contentType('application/json');
+      if( err )  {
+          res.send(JSON.stringify(err));
+      } else {
+        res.send(JSON.stringify(result));
+      }    
+  });
 
 });
 
