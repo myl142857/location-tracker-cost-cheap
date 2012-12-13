@@ -110,6 +110,19 @@ console.log(" ####### find user by id  ########"+id);
   });
 }
 
+// Delete the user account.
+exports.deleteUserId = function(id,callback) {
+console.log(" ####### delete user by id  ########"+id);
+  client.query( "delete from user where id=?",
+      [id],
+      function( err, results, fields)  {
+          if( err) {
+            throw err;
+          }
+      console.log(" ####### GET user  ########"+JSON.stringify(results));
+      callback(results);
+  });
+}
 
 // Util functions
 validatePresenceOf = function(value) {
@@ -134,6 +147,24 @@ randomToken = function() {
 
 
 // Phone number table.
+exports.add_device_sync = function(user_id,name,phonenumber,push_id) {
+  // Generate access code with a random number.
+  var accesscode = Math.floor(Math.random()*10000001);
+  console.log(" ####### SQL add device ########### "+user_id+" ::  "+phonenumber+"  :  "+push_id);
+  client.query("insert into devices (user_id,name,phonenumber,accesscode,push_notification_id,authenticated) values (?,?,?,?,?,?)", 
+    [user_id, name, phonenumber, accesscode, push_id, 0], function(err, info) {
+      // callback function returns last insert id
+      if( err) {
+        //callback(err,null);
+        console.log(" ####### ERROR ######## "+JSON.stringify(err));
+        return err;
+      } else {
+        //callback(err,info.insertId);
+        console.log(" ####### SUCESS ######## "+JSON.stringify(info));
+        return info;
+      }
+  });  
+}
 
 // Add phonenumber
 exports.add_device = function(user_id,name,phonenumber,push_id,callback) {
@@ -207,14 +238,14 @@ exports.getAllDevices = function(user_id,callback){
 
 // Delete phonenumber.
 exports.deletePhonumerById = function(id,callback) {
-  client.query( " delete from devices where id=?",
-      [id],
+  client.query( " delete from devices where id=?",[id],
       function( err, results, fields)  {
-          if( err) {
-            throw err;
-          }
-      console.log(" ####### GET user  ########"+JSON.stringify(results));
-      callback(results);
+        if( err) {
+          console.log(" ######## DELETE Error ######### "+JSON.stringiy(err));
+          callback(err,null);
+        }
+        console.log(" ####### DELETE device  ########"+JSON.stringify(results));
+        callback(null,results);
   });
 }
 
@@ -243,3 +274,9 @@ exports.get_locations = function(callback) {
     callback(results);
   });
 }
+
+// Send message details.
+// < device Id, Phonenumber, Message >
+
+// Received message details.
+// < push_notification_id, Phonenumber, Message >
