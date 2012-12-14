@@ -6,11 +6,9 @@
 		<h1>My Devices</h1>
 	</div>
 	<div class="span3 pull-right">
-		<form action="/user" method="delete" accept-charset="UTF-8">
-			<button type="submit" class="btn btn-danger">
+			<button type="submit" id="deleteAccount" onClick="deleteAccount()" class="btn btn-danger">
   				<i class="icon-trash icon-white"></i> Delete Accout
 			</button>
-		</form>
 	</div>
 </div>
 
@@ -87,12 +85,12 @@
         <br/>
         
 
-	  <table class="table">
+	  <table id="devicetable" class="table">
 	    <tbody>
 			<% for(var i=0; i<devices.length; i++) {%>
-			   <tr>
+			   <tr id="row_<%= devices[i].id%>">
 			   	<td style="border-top:none">
-			   		<div class="row well">
+			   		<div class="row well" data-row=<%= devices[i].phonenumber %> >
 				   		<h3> <%= devices[i].name %> </h3> 
 				   		<h4> <%= devices[i].phonenumber %> </h4>
 				   		<% if (devices[i].authenticated == 0) { %>
@@ -103,8 +101,8 @@
 				   		
 				   		<button type="button" class="btn btn-small btn-primary"><i class="icon-envelope icon-white"></i>Send Access Code</button>
 				   		<div class="pull-right">
-				   			<a class="btn" href="/device"+<%= devices[i].phonenumber%> > <i class="icon-large icon-map-marker"></i></a>
-				   			<a class="btn" id="device_delete"><i class="icon-large icon-trash"></i></a>
+				   			<a class="btn" href="/device/<%= devices[i].id%>" > <i class="icon-large icon-map-marker"></i></a>
+				   			<a class="btn" id="<%= devices[i].id%>" onClick="deleteDevice(this.id)"><i class="icon-large icon-trash"></i></a>
 				   		</div>
 			   		</div>
 			   	</td>
@@ -114,6 +112,31 @@
 	  </table>
 	  </div>
 	  </div>
+
+	<div id="deldevicemodal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	      <div class="modal-header">
+	        <h3>Delete Device</h3>
+	      </div>
+	      <div class="modal-body">
+	        <p> Are you sure want to delete the device.? </p>		        
+	      </div>
+		 <div class="modal-footer">
+			<button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
+  			<button " class="btn btn-danger yesBtn">Yes</button>		 
+	    </div>	      
+    </div>    
+
+	<div id="delaccountmodal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	      <div class="modal-header">
+	        <h3>Delete Device</h3>
+	      </div>
+	      <div class="modal-body">
+	        <p> Are you sure want to delete the account.? </p> <small style="color:red">This action cannot be undone. </small> </div>
+		 <div class="modal-footer">
+			<button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
+  			<button " class="btn btn-danger yesBtn">Yes</button>		 
+	    </div>	      
+    </div>  
 
 <script type="text/javascript">
     function CheckBeforeSubmission()
@@ -137,9 +160,23 @@ $('#add_device').click(function() {
     $(this).button('loading');
 });
 
-$('#device_delete').click(function() {
-	alert("Delete clicked");
-});
+addDevice = function(id) {
+	alert('add Device'+id);
+	var html = '<td style="border-top:none"><div class="row well" data-row='+id+' >'+
+				'<h3>'+$('#name').val()+'</h3> '+
+				'<h4>'+ $('#device').val()+'</h4>'+
+				'<button type="button" class="btn btn-small btn-danger disabled" disabled="disabled"><i class="icon-remove icon-white"></i> Not Authenticated</button>'+
+				'<button type="button" class="btn btn-small btn-primary"><i class="icon-envelope icon-white"></i>Send Access Code</button>'+
+				'<div class="pull-right">'+
+				'<a class="btn" href="/device/'+id+'>" <i class="icon-large icon-map-marker"></i></a>'+
+				'<a class="btn" id="'+id+'" onClick="deleteDevice(this.id)"><i class="icon-large icon-trash"></i></a>'+
+				'</div>'+
+				'</div></td>';
+	$('#devicetable tr:last').after(html);
+	$('#device').val('');
+    $('#name').val('');
+
+}
 
 $("#device_form").submit(function(event){
 	$('#error').hide();
@@ -165,8 +202,8 @@ $("#device_form").submit(function(event){
             		$('#error').html('ERROR:Unable to add device');
             	}
             } else {
-            	 $('#device').val('');
-            	 $('#name').val('');
+            	 // Add the entry to table, if success.
+            	 addDevice(response);
             }
             $('#add_device').button('reset');
         },
@@ -183,48 +220,54 @@ $("#device_form").submit(function(event){
     event.preventDefault();
 });
 
-$("#device_delete").submit(function(event){
-	$('#error').hide();
+deleteDevice = function(id) {
 
-    var $form = $(this),
-        $inputs = $form.find("input, select, button, textarea"),
-        serializedData = $form.serialize();
-
-    $inputs.attr("disabled", "disabled");
+	var deviceId = id;
+	$('#deldevicemodal').modal('show');
 
     // fire post request to /device
-    $.ajax({
-        url: "/device",
-        type: "delete",
-        data: serializedData,
-        success: function(response, textStatus, jqXHR){
-            // log a message to the console
-            if( response.code) {
-            	$('#error').show();
-            	if( response.code == 'ER_DUP_ENTRY') {
-            		$('#error').html('ERROR:Number already added');
-            	} else {
-            		$('#error').html('ERROR:Unable to add device');
-            	}
-            } else {
-            	 $('#device').val('');
-            	 $('#name').val('');
-            }
-            $('#add_device').button('reset');
-        },
-        error: function(jqXHR, textStatus, errorThrown){
-        	alert(" Error while submitting post "+testStatus+"  : "+errorThrown);
-        },
-        complete: function(){
-            // enable the inputs
-            $inputs.removeAttr("disabled");
-        }
+	$('#deldevicemodal .yesBtn').click(function() {   
+		$('#deldevicemodal').modal('hide'); 	
+	    $.ajax({
+	        url: "/device/"+id,
+	        type: "delete",
+	        success: function(response, textStatus, jqXHR){
+	            // log a message to the console
+	            if( response.code) {
+	            	alert('Error while deleting.');
+	            } else {
+	            	 // Success remove the entry.
+	            	 $("#row_"+id).remove();
+	            }
+	        },
+	        error: function(jqXHR, textStatus, errorThrown){
+	        	alert(" Error while submitting post "+testStatus+"  : "+errorThrown);
+	        },
+	        complete: function(){
+	            // enable the inputs
+	        }
+	    }); // End of ajax
     });
+}
 
-    // prevent default posting of form
-    event.preventDefault();
-});
-
+deleteAccount = function() {
+	$('#delaccountmodal').modal('show');
+	$('#delaccountmodal .yesBtn').click(function() {   
+		$('#delaccountmodal').modal('hide'); 
+	    $.ajax({
+	        url: "/user",
+	        type: "delete",
+	        success: function(response, textStatus, jqXHR){
+	            // log a message to the console
+	        },
+	        error: function(jqXHR, textStatus, errorThrown){
+	        },
+	        complete: function(){
+	            // enable the inputs
+	        }
+	    }); // End of ajax	
+    });
+}
 
 </script>
 

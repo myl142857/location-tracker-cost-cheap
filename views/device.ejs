@@ -1,11 +1,11 @@
 <% layout('device_header') -%>
-<% stylesheet('css/map.css') -%>
+<% stylesheet('/css/map.css') -%>
 <% script('https://maps.googleapis.com/maps/api/js?key=AIzaSyA9hZO1Yz7lBgNJiKfu5qznUxk2EhuqbxI&sensor=true') -%>
 <% script('http://localhost:3000/socket.io/socket.io.js') -%>
 
 <div class='row'>	
-	<div class="span4 pull-left">
-		<h3>Movement Capture</h3>
+	<div class="span5 pull-left">
+		<p><span style="color:blue"><%= device[0].name %>'s</span> movement.</p>
 	</div>
 </div>
 
@@ -31,11 +31,6 @@
 <script type="text/javascript"> 
 
 $(document).ready(function () {
-
-	$("#add_phone").click(function() {
-		alert(' clicked save '+$("#device").val());
-	});
-
 	var mapOptions = {
 	  center: new google.maps.LatLng(-34.397, 150.644),
 	  zoom: 8,
@@ -43,7 +38,6 @@ $(document).ready(function () {
 	};
 
 	var map = new google.maps.Map(document.getElementById("map_canvas"),mapOptions);
-
 });
 
 </script>  
