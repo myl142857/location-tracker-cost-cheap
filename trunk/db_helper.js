@@ -117,10 +117,10 @@ console.log(" ####### delete user by id  ########"+id);
       [id],
       function( err, results, fields)  {
           if( err) {
-            throw err;
+            callback(err,null);
           }
       console.log(" ####### GET user  ########"+JSON.stringify(results));
-      callback(results);
+      callback(null,results);
   });
 }
 
@@ -147,25 +147,6 @@ randomToken = function() {
 
 
 // Phone number table.
-exports.add_device_sync = function(user_id,name,phonenumber,push_id) {
-  // Generate access code with a random number.
-  var accesscode = Math.floor(Math.random()*10000001);
-  console.log(" ####### SQL add device ########### "+user_id+" ::  "+phonenumber+"  :  "+push_id);
-  client.query("insert into devices (user_id,name,phonenumber,accesscode,push_notification_id,authenticated) values (?,?,?,?,?,?)", 
-    [user_id, name, phonenumber, accesscode, push_id, 0], function(err, info) {
-      // callback function returns last insert id
-      if( err) {
-        //callback(err,null);
-        console.log(" ####### ERROR ######## "+JSON.stringify(err));
-        return err;
-      } else {
-        //callback(err,info.insertId);
-        console.log(" ####### SUCESS ######## "+JSON.stringify(info));
-        return info;
-      }
-  });  
-}
-
 // Add phonenumber
 exports.add_device = function(user_id,name,phonenumber,push_id,callback) {
 
@@ -177,8 +158,10 @@ client.query("insert into devices (user_id,name,phonenumber,accesscode,push_noti
         function(err, info) {
           // callback function returns last insert id
           if( err) {
+            console.log(" ####### ERROR ######## "+JSON.stringify(err));
             callback(err,null);
           } else {
+            console.log(" ####### SUCESS ######## "+JSON.stringify(info));
             callback(err,info.insertId);
           }
       });
@@ -197,30 +180,18 @@ exports.updateDeviceWithPh = function(phonenumber,authenticate,callback) {
   });
 }
 
-
-// Get phonenumber. user_id as key
-exports.getDeviceByUserId = function(user_id,callback) {
-  client.query( "select * from devices where user_id=?",
-      [user_id],
-      function( err, results, fields)  {
-          if( err) {
-            throw err;
-          }
-      console.log(" ####### GET user  ########"+JSON.stringify(results));
-      callback(results);
-  });
-}
-
 // Get phonenumber. phonenumber_id as key
 exports.getDeviceById = function(id,callback){
   client.query( "select * from devices where id=?",
       [id],
       function( err, results, fields)  {
           if( err) {
-            throw err;
+            console.log(" ####### GET device SQL ERROR  ########"+JSON.stringify(err));
+            callback(err,null);
+          } else {
+            console.log(" ####### GET device SQL  ########"+JSON.stringify(results));
+            callback(null,results);
           }
-      console.log(" ####### GET user  ########"+JSON.stringify(results));
-      callback(results);
   });
 }
 
@@ -229,15 +200,18 @@ exports.getAllDevices = function(user_id,callback){
   client.query( "select * from devices where user_id=?",
       [user_id],function( err, results, fields)  {
           if( err) {
-            throw err;
+            console.log(" ####### GET all Devices SQL ERROR  ########"+JSON.stringify(err));
+            callback(err,null);
+          } else {
+            console.log(" ####### GET all Devices  ########"+JSON.stringify(results));
+            callback(null,results);
           }
-      console.log(" ####### GET user  ########"+JSON.stringify(results));
-      callback(results);
   });
 }
 
 // Delete phonenumber.
 exports.deletePhonumerById = function(id,callback) {
+  console.log(" ######## sql deletePhonumerById ######### "+id);
   client.query( " delete from devices where id=?",[id],
       function( err, results, fields)  {
         if( err) {

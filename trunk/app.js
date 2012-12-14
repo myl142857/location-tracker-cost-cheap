@@ -155,7 +155,7 @@ app.post('/login', function(req, res) {
 });
 
 app.get('/logout', loadUser, function(req, res){
-  console.log(" ######### DELETE /user ########### "+req.session+"  ::  "+req.session.user_id);
+  console.log(" ######### GET /logout ########### "+req.session+"  ::  "+req.session.user_id);
   if (req.session) {
     LoginToken.remove({ email: req.currentuser.email }, function() {});
     res.clearCookie('logintoken');
@@ -166,42 +166,53 @@ app.get('/logout', loadUser, function(req, res){
   res.redirect('/index');
 });
 
-// Delete a device.
-app.delete('/user', loadUser, function(req, res){
-  console.log(" ######### DELETE /device ########### ");
-
-  // Delete the device with id.
-  sql_model.deletePhonumerById( id, function( result) {
-      // On sucess, redirect to settings page.
-      // Get all the devices list. 
-      sql_model.getAllDevices(req.session.user_id,function(results) {
-        res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,devices:results });
-      }); 
- });
-
+// Delete user account.
+app.delete('/user', loadUser, function(req,res) {
+  console.log(" ######### DELETE /user ########### "+req.session+"  ::  "+req.session.user_id);
+  if (req.session) {
+    LoginToken.remove({ email: req.currentuser.email }, function() {});
+    res.clearCookie('logintoken');
+    req.session.destroy(function() {
+      console.log(" ######### session destroyed ########### "+req.session);
+    });
+  }
+  sql_model.deleteUserId(req.session.user_id, function(err,result) {
+    if(err) {
+      // TODO: Handle the error scenario.
+    } else {
+      console.log(" ######### account deleted ########### "+JSON.stringify(result));
+      res.redirect('/index');
+    }
+  });
 });
 
 // Settings page
 app.get('/settings', loadUser, function(req, res){
-  console.log(" ######### GET /user/settings ########### "+req.currentuser+"  ::  "+req.session.user_id);
-  sql_model.getAllDevices(req.session.user_id,function(results) {
+  console.log(" ######### GET /settings ########### "+req.currentuser+"  ::  "+req.session.user_id);
+  sql_model.getAllDevices(req.session.user_id,function(err,results) {
+    if( err) {
+      // TODO: Handle the error scenario.
+    }
     res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,devices:results});  
   });                    
 });
 
-app.get('/user', loadUser, function(req, res) {
-  // Get the devices registered list.
-  console.log(" ######### GET /user ######### "+req.currentuser);
-  res.render('user',{ user: {username:req.currentuser},title:req.currentuser } );
-});
-
 // Device page:: Phonenumber is input.
-app.get('/device', loadUser, function(req, res){
-  console.log(" ######### GET /device ########### ");
+// GET URL: http://localhost:3000/device/1
+app.get('/device/:id', loadUser, function(req, res){
+  console.log(" ######### GET /device ########### "+req.currentuser+" : "+req.params.id);
   // Send devices details & location details. 
-  var deviceData;
+  var devicedata;
   var locationsList;
-  res.render('device',{ title:req.currentuser, user: {username:req.currentuser}, device: deviceData,locations:locationsList } );
+  sql_model.getDeviceById(req.params.id,function(err,result){
+    //sql_model.getDeviceById(3,function(err,result){
+    if( err ) {
+      //TODO: Handle the error scenario.
+    } else {
+      devicedata = result;
+      res.render('device',{ title:req.currentuser, user: {username:req.currentuser}, device: devicedata,locations:locationsList } );
+    }
+  });  
 });
 
 // Create a device 
@@ -222,11 +233,11 @@ app.post('/device', loadUser, function(req, res) {
 });
 
 // Delete a device.
-app.delete('/device', loadUser, function(req, res){
-  console.log(" ######### DELETE /device ########### ");
+app.delete('/device/:id', loadUser, function(req, res){
+  console.log(" ######### DELETE /device ###########"+req.params.id+" :: ");
 
   // Delete the device with id.
-  sql_model.deletePhonumerById( id, function( err,result) {
+  sql_model.deletePhonumerById( req.params.id, function( err,result) {
       res.contentType('application/json');
       if( err )  {
           res.send(JSON.stringify(err));
