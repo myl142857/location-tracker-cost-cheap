@@ -8,20 +8,6 @@ var client = mysql.createConnection({
   hostname: 'localhost'  
 }); 
 
-
-
-// destroy old db
-/*client.query('DROP DATABASE IF EXISTS tracker_db', function(err) {
-  if (err) { throw err; }
-}); 
-
-// create database
-client.query('CREATE DATABASE tracker_db', function(err) {
-  if (err) { throw err; }
-}); */
-
-
-
 client.query('USE tracker_db');
 
 // create table
@@ -37,8 +23,6 @@ client.query('USE tracker_db');
 client.query(sql, function(err) {
   if (err) { throw err; }
 }); */
-
-console.log('database tracker_db is set.');
 
 function extractKeywords(text) {
   if (!text) return [];
@@ -145,16 +129,17 @@ randomToken = function() {
   return Math.round((new Date().valueOf() * Math.random())) + '';
 }
 
-
+generateAccessCode = function() {
+  return Math.floor(Math.random()*10000001);
+}
 // Phone number table.
 // Add phonenumber
-exports.add_device = function(user_id,name,phonenumber,push_id,callback) {
-
-// Generate access code with a random number.
-var accesscode = Math.floor(Math.random()*10000001);
-console.log(" ####### SQL add device ########### "+user_id+" ::  "+phonenumber+"  :  "+push_id);
-client.query("insert into devices (user_id,name,phonenumber,accesscode,push_notification_id,authenticated) values (?,?,?,?,?,?)", 
-        [user_id, name, phonenumber, accesscode, push_id, 0], 
+exports.add_device = function(user_id,name,countrycode,phonenumber,push_id,callback) {
+      // Generate access code with a random number.
+      var accesscode = generateAccessCode();
+      console.log(" ####### SQL add device ########### "+user_id+" ::  "+phonenumber+"  :  "+push_id);
+      client.query("insert into devices (user_id,name,countrycode,phonenumber,accesscode,push_notification_id,authenticated) values (?,?,?,?,?,?,?)", 
+        [user_id, name,countrycode,phonenumber, accesscode, push_id, 0], 
         function(err, info) {
           // callback function returns last insert id
           if( err) {
@@ -168,15 +153,17 @@ client.query("insert into devices (user_id,name,phonenumber,accesscode,push_noti
 }
 
 //Update phonumber: update authenticated to true/false with phonenumber as key.
-exports.updateDeviceWithPh = function(phonenumber,authenticate,callback) {
-    client.query( "update devices set authenticated=? where phonumber=?",
-      [authenticate,phonenumber],
+exports.updateDeviceWithPh = function(phonenumber,push_notification_id,authenticate,callback) {
+    client.query( "update devices set authenticated=?,push_notification_id=? where phonenumber=?",
+      [authenticate,push_notification_id,phonenumber],
       function( err, results, fields)  {
           if( err) {
-            throw err;
-          }
-      console.log(" ####### GET user  ########"+JSON.stringify(results));
-      callback(results);
+            console.log(" ####### GET user  ########"+JSON.stringify(err));
+            callback(err,null)
+          } else {
+            console.log(" ####### GET user  ########"+JSON.stringify(results));
+            callback(err,results);
+        }
   });
 }
 
@@ -184,6 +171,21 @@ exports.updateDeviceWithPh = function(phonenumber,authenticate,callback) {
 exports.getDeviceById = function(id,callback){
   client.query( "select * from devices where id=?",
       [id],
+      function( err, results, fields)  {
+          if( err) {
+            console.log(" ####### GET device SQL ERROR  ########"+JSON.stringify(err));
+            callback(err,null);
+          } else {
+            console.log(" ####### GET device SQL  ########"+JSON.stringify(results));
+            callback(null,results);
+          }
+  });
+}
+
+// Get accesscode using phonenumber.
+exports.getDeviceByPhNumber = function(phonenumber,callback){
+  client.query( "select * from devices where phonenumber=?",
+      [phonenumber],
       function( err, results, fields)  {
           if( err) {
             console.log(" ####### GET device SQL ERROR  ########"+JSON.stringify(err));
@@ -222,6 +224,28 @@ exports.deletePhonumerById = function(id,callback) {
         callback(null,results);
   });
 }
+
+// Push notification table.
+exports.addPushNotificationId = function(user_id,phonenumber,push_notification_id,device_os,callback) {
+  console.log(" ######## sql deletePhonumerById ######### "+id);
+  client.query("insert into push_ids (user_id,phonenumber,push_notification_id,device_os,) values (?,?,?,?,?)", 
+        [user_id, phonenumber,push_notification_id,phonenumber, device_os], 
+
+      function( err, results, fields)  {
+        if( err) {
+          console.log(" ######## DELETE Error ######### "+JSON.stringiy(err));
+          callback(err,null);
+        }
+        console.log(" ####### DELETE device  ########"+JSON.stringify(results));
+        callback(null,results);
+  });
+}
+
+// Push Notification Messages table.
+// Schema:: [ id, user_id, phonenumber, push_notification_id, admin_message, responded_message, latitude, longitude, accuracy]
+
+
+
 
 // Locations table.
 

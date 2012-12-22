@@ -26,16 +26,18 @@
           <li> <a href="/about">About Us</a></li>   
         <% } %>   
     </ul>
-    <ul class="nav pull-right" style="margin-right:20px;" >
-        <li> <a href="/register">Create Account </a></li>
-        <li style="margin-top:10px">
-          <form class="form-inline" action="/login" method="post" accept-charset="UTF-8">
-            <input type="text" name="email" class="input-small search-query" placeholder="Email">
-            <input type="password" name="password" class="input-small search-query" placeholder="Password">
-            <button type="submit" class="btn1 btn-small btn-primary">Login</button>
-          </form>        
-        </li>        
-    </ul>
+      <form action="/login" method="post" class="navbar-form pull-right" style="margin-right:20px;" >
+        <div>
+              <input class="span2" name="email" style="border-radius:3px;" type="text" placeholder="Email">
+              <input class="span2" name="password" style="border-radius:3px;" type="password" placeholder="Password">
+              <button type="submit" style="border-radius:3px;" class="btn btn-success">Login</button>
+        </div>
+        <div class="row" style="padding:5px;">
+          <a class="span2" href="/register">Create Account </a>
+          <a class="span2" style="margin-left:5px" href="/register">Forgot Password?</a>
+        </div>
+      </form>
+
      </div><!--/.nav-collapse -->
   </div>
 </div>

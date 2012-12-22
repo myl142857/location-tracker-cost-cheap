@@ -20,7 +20,7 @@
          <input type="text" id="name" name="name" class="input search-query" placeholder="Name"> <br/><br/>
          <input type="tel" id="device" name="device" class="input search-query" placeholder="Phone number">         
          <br/> <br/>
-		 <select id="countrycode" name="countrycode">
+		 <select name="countrycode">
 		 <option value="1" selected>USA (+1) 
 		 <option value="54">Argentina (+54) 
 		 <option value="61">Australia (+61) 
@@ -79,30 +79,30 @@
 		 <option value="379">Vatican City (+379) 
 		 <option value="84">Vietnam (+84) 
 		 </select> <br/> <br/>
-  		 <button type="submit" id="add_device" class="btn btn-success" data-loading-text="Adding Device..."><i class="icon-plus-sign icon-white"></i>Add Device</button> 
+  		 <button id="add_device" class="btn btn-success" data-loading-text="Adding Device..."><i class="icon-plus-sign icon-white"></i>Add Device</button> 
   		 <h4 id="error" style="color:red;display:none;"></h4> 		   		 
         </form>
         <br/>
         
 
 	  <table id="devicetable" class="table">
-	    <tbody id="devicetablebody">
+	    <tbody>
 			<% for(var i=0; i<devices.length; i++) {%>
 			   <tr id="row_<%= devices[i].id%>">
 			   	<td style="border-top:none">
-			   		<div class="row well" >
-				   		<h3 id="name"> <%= devices[i].name %> </h3> 
-				   		<h4 id="phonenumber"> <%= devices[i].phonenumber %> </h4>
+			   		<div class="row well">
+				   		<h3> <%= devices[i].name %> </h3> 
+				   		<h4> <%= devices[i].phonenumber %> </h4>
 				   		<% if (devices[i].authenticated == 0) { %>
 				   			<button type="button" class="btn btn-small btn-danger disabled" disabled="disabled"><i class="icon-remove icon-white"></i> Not Authenticated</button>
 				   		<% } else { %>
-							<button type="button" class="btn btn-small btn-success disabled" disabled="disabled"><i class="icon-ok icon-white"></i>Authenticated</button>
+							<button type="button" class="btn btn-small btn-success disabled" disabled="disabled"><i class="icon-ok icon-white"></i> Not Authenticated</button>
 				   		<% } %>
 				   		
 				   		<button type="button" class="btn btn-small btn-primary"><i class="icon-envelope icon-white"></i>Send Access Code</button>
 				   		<div class="pull-right">
-				   			<a class="btn" id="map" href="/device/<%= devices[i].id%>" > <i class="icon-large icon-map-marker"></i></a>
-				   			<a class="btn" id="delete" onClick="deleteDevice(<%= devices[i].id%>)"><i class="icon-large icon-trash"></i></a>				   			
+				   			<a class="btn" href="/device/<%= devices[i].id%>" > <i class="icon-large icon-map-marker"></i></a>
+				   			<a class="btn" id="<%= devices[i].id%>" onClick="deleteDevice(this.id)"><i class="icon-large icon-trash"></i></a>
 				   		</div>
 			   		</div>
 			   	</td>
@@ -162,7 +162,6 @@
         } else {
             return true;
         }
-       return false;
     }
 </script>
 
@@ -179,42 +178,37 @@ showAlert = function(msg) {
 	$('#alertmodal').modal('show');
 }
 
-testclick = function() {
-	alert('hi test click');
-}
-
 addDevice = function(id) {
-	var html = '<tr id="row_"' +id+ '"><td style="border-top:none"><div class="row well">'+
+
+	var html = '<td style="border-top:none"><div class="row well">'+
 				'<h3>'+$('#name').val()+'</h3> '+
 				'<h4>'+ $('#device').val()+'</h4>'+
 				'<button type="button" class="btn btn-small btn-danger disabled" disabled="disabled"><i class="icon-remove icon-white"></i> Not Authenticated</button>'+
 				'<button type="button" class="btn btn-small btn-primary"><i class="icon-envelope icon-white"></i>Send Access Code</button>'+
 				'<div class="pull-right">'+
-				'<a class="btn" href="/device/'+id+'"> <i class="icon-large icon-map-marker"></i></a>'+
+				'<a class="btn" href="/device/'+id+'>" <i class="icon-large icon-map-marker"></i></a>'+
 				'<a class="btn" id="'+id+'" onClick="deleteDevice(this.id)"><i class="icon-large icon-trash"></i></a>'+
-				'</div></div></td></tr>';
-	//$('#devicetable tr:last').after(html);
-	//$('#devicetable tbody').append(html);
-	var $tr = $('#devicetable').find("tbody tr:last").clone();
-	$tr.attr("id","row_"+id);
-	$tr.find("#name").text($('#name').val());
-	$tr.find("#phonenumber").text($('#device').val());
-	$tr.find("#map").attr("href","/device/"+id);
-	$tr.find('#delete').attr("id",id);
-	//TODO: click event is not registered properly. 
-	$tr.find('#delete').click(function(id){
-		alert('MANI DELETE '+id);
-	});
-	$('#devicetable').find("tbody tr:last").after($tr); 
-
+				'</div>'+
+				'</div></td>';
+	var rowcount = $('#devicetable >tbody >tr').length;
+	alert('add device add rowcount '+rowcount+" id "+id);	
+	if (rowcount == 1) {
+		$('#devicetable').find('tbody').append('<tr id="row_0">'+html+'<tr>');				
+	} else {
+		$('#devicetable tr:last').after(html);
+	}
 	$('#device').val('');
     $('#name').val('');
-    $('#countrycode').val('1');
+
 }
 
 $("#device_form").submit(function(event){
 	$('#error').hide();
 
+	if( CheckBeforeSubmission() == false) {
+		$('#add_device').button('reset');
+		return;
+	}
     var $form = $(this),
         $inputs = $form.find("input, select, button, textarea"),
         serializedData = $form.serialize();
@@ -260,7 +254,7 @@ deleteDevice = function(id) {
 	$('#deldevicemodal').modal('show');
 
     // fire post request to /device
-	$('#deldevicemodal .yesBtn').click(function() {  
+	$('#deldevicemodal .yesBtn').click(function() {   
 		$('#deldevicemodal').modal('hide'); 	
 	    $.ajax({
 	        url: "/device/"+id,
