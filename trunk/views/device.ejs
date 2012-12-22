@@ -7,6 +7,11 @@
 	<div class="span5 pull-left">
 		<p><span style="color:blue"><%= device[0].name %>'s</span> movement.</p>
 	</div>
+<div class="span5 pull-right">
+	<textarea class="input-xlarge" id="message" rows="3"></textarea>
+	<button type="submit" id="sendmessage" onClick="sendmessage()" class="btn btn-danger">
+	<i class="icon-trash icon-white"></i> Send Message</button>
+	</div>
 </div>
 
 <table class="table">
@@ -40,4 +45,7 @@ $(document).ready(function () {
 	var map = new google.maps.Map(document.getElementById("map_canvas"),mapOptions);
 });
 
+sendmessage = function() {
+	alert($("#message").val());
+}
 </script>  

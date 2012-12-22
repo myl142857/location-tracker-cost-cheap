@@ -59,6 +59,64 @@ models.defineModels(mongoose, function() {
   db = mongoose.connect(app.set('db-uri'));
 })
 
+function loadUser(req, res, next) {
+  console.log(" ####### Load user ######## "+req.session.user_id);
+  // Check if session has user_id
+  if( req.session.user_id) {
+    sql_model.findUserId(req.session.user_id, function(results) {
+      if( results.length >0 ) {
+        console.log(" ######## SQL found UserId result  ########## "+results[0].email+":"+results[0].salt+":"+results[0].hashed_password);
+        // Set the session user id.
+        req.currentuser = results[0].email;
+        next();
+      } else {
+        res.redirect('/index');
+      }
+    });
+  } else if (req.cookies.logintoken) {
+    console.log(" ####### Load user cookies login token ##########"+req.cookies.logintoken);
+    authenticateFromLoginToken(req, res, next);
+  } else {
+    console.log(" ####### Load user redirect /sessions/new ###### ");
+    res.redirect('/index');
+  }
+} // End of loadUser.
+
+function authenticateFromLoginToken(req, res, next) {
+  var cookie = JSON.parse(req.cookies.logintoken);
+  console.log(" ########## authenticateFromLoginToken cookie ######### "+ JSON.stringify(cookie));
+  LoginToken.findOne({ email: cookie.email,
+                       series: cookie.series,
+                       token: cookie.token }, (function(err, token) {
+                       
+    console.log(" ########## LoginToken.findOne ######### "+ JSON.stringify(token)) ;                       
+    if (!token) {
+      res.redirect('/index');
+      return;
+    }
+    
+    sql_model.findUser(token.email, function(results) {
+      if( results.length >0 ) {
+        console.log(" ######## SQL findUser result  ########## "+results[0].email+":"+results[0].salt+":"+results[0].hashed_password);
+        req.session.user_id = results[0].id;
+        req.currentUser = results[0].email;
+        token.token = token.randomToken();
+        console.log(" ########## Generate Random token ###### "+token.token);
+        token.save(function() {
+        console.log(" ########## Token obtained SAVE to cookie ######### "+ token.cookieValue);
+          res.cookie('logintoken', token.cookieValue, { expires: new Date(Date.now() + 2 * 604800000), path: '/' });
+          next();
+        });
+
+      } else {
+        console.log(" ######## SQL findUser NO result  ########## ");
+        res.redirect('/index');
+      }
+      
+    }); // sql query
+  })); // LoginToken query
+}
+
 app.get('/', loadUser, function(req, res) {
     console.log(" ######### GET / ############ ");
     // Show index page
@@ -218,17 +276,23 @@ app.get('/device/:id', loadUser, function(req, res){
 // Create a device 
 app.post('/device', loadUser, function(req, res) {
 
-  console.log("######### POST /user/device ########## "+req.body.device+" ::  "+req.session.user_id);
+  console.log("######### POST /user/device ########## "+req.body.device+" ::  "+req.session.user_id+"  :: "+req.body.countrycode);
     // Get the user id, device: Add to phone number table.
-    // Add to sql_model.
-    sql_model.add_device(req.session.user_id,req.body.name,req.body.device,"aas019jasjer-123923jdjdfuej",function(err,result) {
-      res.contentType('application/json');
-      if( err )  {
-          res.send(JSON.stringify(err));
-      } else {
-        res.send(JSON.stringify(result));
-      }
-    }); // Add device 
+    if( ! req.body.device) {
+      res.send(' {"code":"ER_NO_PHONE_NUMBER"}');
+    } else if(! req.body.name) {
+      res.send('{"code":"ER_NO_NAME"}');
+    } else {
+      // Add to sql_model.
+      sql_model.add_device(req.session.user_id,req.body.name,req.body.countrycode,req.body.device,"aas019jasjer-123923jdjdfuej",function(err,result) {
+        res.contentType('application/json');
+        if( err )  {
+            res.send(JSON.stringify(err));
+        } else {
+          res.send(JSON.stringify(result));
+        }
+      }); // Add device 
+    }
   console.log("######### POST /user/device FUNCTION ENDS ########## ");
 });
 
@@ -254,66 +318,114 @@ app.get('/devices', loadUser, function(req, res) {
     res.redirect('/index');
 });
 
+// Authenticate access code & phonenumber
+app.post('/verify_accesscode', function(req, res) {
+  console.log( " ##########  /POST verify_accesscode ############ "+req.body.phonenumber);
+  console.log( " ##########  /POST push notification id ############ "+req.body.push_notification_id);
+  console.log( " ##########  /POST device os ############ "+req.body.device_os);
 
-function loadUser(req, res, next) {
-  console.log(" ####### Load user ######## "+req.session.user_id);
-  // SQL model.
-  if( req.session.user_id) {
-    sql_model.findUserId(req.session.user_id, function(results) {
-      if( results.length >0 ) {
-        console.log(" ######## SQL findUserId result  ########## "+results[0].email+":"+results[0].salt+":"+results[0].hashed_password);
-        // Set the session user id.
-        req.currentuser = results[0].email;
-        next();
-      } else {
-        res.redirect('/index');
-      }
-    });
-  } else if (req.cookies.logintoken) {
-    console.log(" ####### Load user cookies login token ##########"+req.cookies.logintoken);
-    authenticateFromLoginToken(req, res, next);
-  } else {
-    console.log(" ####### Load user redirect /sessions/new ###### ");
-    res.redirect('/index');
+  if( !req.body.phonenumber || !req.body.accesscode) {
+       var jsonResponse = [{errorcode:'3003'},{ error:"Missing mandatory parameters."}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;    
+  } else if(!req.body.push_notification_id) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Notification ID is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  } else if(!req.body.device_os) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Device OS is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
   }
-} // End of loadUser.
+  // Return the userid,session_id,
+  sql_model.getDeviceByPhNumber(req.body.phonenumber,function(err,result) {
+    if(err) {
+       var jsonResponse = [{ error:"SQL error"}];
+       res.send(JSON.stringify(jsonResponse));      
+    } else {
+      if(result.length > 0 ) {
+        // Check for accesscode
+        if(result[0].accesscode == req.body.accesscode) {
+         var jsonResponse = [{ user_id: result[0].user_id, session_id:result[0].session_id}];
+         res.send(JSON.stringify(jsonResponse));      
+         //Update the authenticated status.
+         sql_model.updateDeviceWithPh(req.body.phonenumber,req.body.push_notification_id,1,function(err,result){
+            if( err ) {
+              console.log("Update authenticated ERROR");
+            } else {
+              console.log("Update authenticated SUCCESS");
+            }
+         });
 
-function authenticateFromLoginToken(req, res, next) {
-  var cookie = JSON.parse(req.cookies.logintoken);
-  console.log(" ########## authenticateFromLoginToken cookie ######### "+ JSON.stringify(cookie));
-  LoginToken.findOne({ email: cookie.email,
-                       series: cookie.series,
-                       token: cookie.token }, (function(err, token) {
-                       
-    console.log(" ########## LoginToken.findOne ######### "+ JSON.stringify(token)) ;                       
-    if (!token) {
-      res.redirect('/index');
-      return;
-    }
-    
-    sql_model.findUser(token.email, function(results) {
-      if( results.length >0 ) {
-        console.log(" ######## SQL findUser result  ########## "+results[0].email+":"+results[0].salt+":"+results[0].hashed_password);
-        req.session.user_id = results[0].id;
-        req.currentUser = results[0].email;
-        token.token = token.randomToken();
-        console.log(" ########## Generate Random token ###### "+token.token);
-        token.save(function() {
-        console.log(" ########## Token obtained SAVE to cookie ######### "+ token.cookieValue);
-          res.cookie('logintoken', token.cookieValue, { expires: new Date(Date.now() + 2 * 604800000), path: '/' });
-          next();
-        });
+         // Add the push notification id against phonenumber,user id.
 
+        } else {
+         var jsonResponse = [{errorcode:'3002'},{ error:"Invalid accesscode"}];
+         res.send(JSON.stringify(jsonResponse));                
+        }
       } else {
-        console.log(" ######## SQL findUser NO result  ########## ");
-        res.redirect('/index');
+       var jsonResponse = [{errorcode:'3001'},{ error:"Invalid phonenumber"}];
+       res.send(JSON.stringify(jsonResponse));      
       }
-      
-    }); // sql query
-  })); // LoginToken query
+    }
+  });
 
-}
+});
 
+// Generate the access code and send to the mobile user.
+app.post('/send_accesscode',function(req,res) {
+  console.log( " ##########  /POST send_accesscode ############ "+req.body.phonenumber+"   "+res.body.accesscode);
+
+  if( !req.body.phonenumber) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Phonenumber is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;    
+  } 
+
+  sql_model.getDeviceByPhNumber(req.body.phonenumber,function(err,result) {
+    if(err) {
+       var jsonResponse = [{ error:"SQL error"}];
+       res.send(JSON.stringify(jsonResponse));      
+    } else {
+      if(result.length > 0 ) {
+        // Check for accesscode
+        // Get phone number, country code, send SMS.
+        if(result[0].accesscode == req.body.accesscode) {
+         var jsonResponse = [{ user_id: result[0].user_id, session_id:result[0].session_id}];
+         res.send(JSON.stringify(jsonResponse));      
+         //Update the authenticated status.
+         sql_model.updateDeviceWithPh(req.body.phonenumber,1,function(err,result){
+            if( err ) {
+              console.log("Update authenticated ERROR");
+            } else {
+              console.log("Update authenticated SUCCESS");
+            }
+         });
+        } else {
+         var jsonResponse = [{errorcode:'3002'},{ error:"Invalid accesscode"}];
+         res.send(JSON.stringify(jsonResponse));                
+        }
+      } else {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Invalid phonenumber"}];
+       res.send(JSON.stringify(jsonResponse));      
+      }
+    }
+  });  
+
+
+});
+
+// Register PUSH NOTIFICATION ID
+app.post('/register_push_notificationid', function(req, res) {
+
+});
+
+// Send push MSG GCM.
+app.post('/push_message', function(req, res) {
+
+});
+
+// Get session_id, phonenumber
 app.post('/update_location', function(request, response) {
   console.log( " ##########  request body ############ "+request.body.latitude+"   "+request.body.longitude+"  "+request.body.accuracy);
   var data = {
