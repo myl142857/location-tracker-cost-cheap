@@ -5,23 +5,22 @@
 	<div class="span4 offset1 pull-left">
 		<h1>My Devices</h1>
 	</div>
-	<div class="span3 pull-right" style="margin-right:100px">
+	<div class="span3 pull-right">
 			<button type="submit" id="deleteAccount" onClick="deleteAccount()" class="btn btn-danger">
   				<i class="icon-trash icon-white"></i> Delete Accout
 			</button>
-			<br/><br/><br/>
-			<textarea class="input-xlarge" id="message" rows="3" placeholder="Maximum 200 characters."></textarea>
-			<button type="submit" id="sendmessage" onClick="sendMessage()" class="btn btn-success">
-			<i class="icon-envelope icon-white"></i> Send Message to All</button>
 	</div>
 </div>
 
+<br/>
+
 <div class="row">
-    <div class="span10 offset1">    	        
+    <div class="span10 offset1">    	
+        <form id="device_form" onsubmit="return CheckBeforeSubmission();">
          <input type="text" id="name" name="name" class="input search-query" placeholder="Name"> <br/><br/>
          <input type="tel" id="device" name="device" class="input search-query" placeholder="Phone number">         
          <br/> <br/>
-		 <select id="countrycode" name="countrycode">
+		 <select name="countrycode">
 		 <option value="1" selected>USA (+1) 
 		 <option value="54">Argentina (+54) 
 		 <option value="61">Australia (+61) 
@@ -79,13 +78,15 @@
 		 <option value="1">USA (+1) 
 		 <option value="379">Vatican City (+379) 
 		 <option value="84">Vietnam (+84) 
-		 </select> <br/>
-  		 <button id="add_device" class="btn btn-success" onClick="addDevicePost()" data-loading-text="Adding Device..."><i class="icon-plus-sign icon-white"></i>Add Device</button> 	   		 
-        <br/> <br/>
+		 </select> <br/> <br/>
+  		 <button type="submit" id="add_device" class="btn btn-success" data-loading-text="Adding Device..."><i class="icon-plus-sign icon-white"></i>Add Device</button> 
+  		 <h4 id="error" style="color:red;display:none;"></h4> 		   		 
+        </form>
+        <br/>
         
 
 	  <table id="devicetable" class="table">
-	    <tbody id="devicetablebody">
+	    <tbody>
 			<% for(var i=0; i<devices.length; i++) {%>
 			   <tr id="row_<%= devices[i].id%>">
 			   	<td style="border-top:none">
@@ -95,13 +96,13 @@
 				   		<% if (devices[i].authenticated == 0) { %>
 				   			<button type="button" class="btn btn-small btn-danger disabled" disabled="disabled"><i class="icon-remove icon-white"></i> Not Authenticated</button>
 				   		<% } else { %>
-							<button type="button" class="btn btn-small btn-success disabled" disabled="disabled"><i class="icon-ok icon-white"></i>Authenticated</button>
+							<button type="button" class="btn btn-small btn-success disabled" disabled="disabled"><i class="icon-ok icon-white"></i> Not Authenticated</button>
 				   		<% } %>
 				   		
 				   		<button type="button" class="btn btn-small btn-primary"><i class="icon-envelope icon-white"></i>Send Access Code</button>
 				   		<div class="pull-right">
 				   			<a class="btn" id="map" href="/device/<%= devices[i].id%>" > <i class="icon-large icon-map-marker"></i></a>
-				   			<a class="btn" id="delete" onClick="deleteDevice(<%= devices[i].id%>)"><i class="icon-large icon-trash"></i></a>				   			
+				   			<a class="btn" class="delete" id="<%= devices[i].id%>" onClick="deleteDevice(this.id)"><i class="icon-large icon-trash"></i></a>
 				   		</div>
 			   		</div>
 			   	</td>
@@ -137,30 +138,29 @@
 	    </div>	      
     </div>  
 
-	<div id="alertmodal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-	      <div class="modal-header">
-	        <h3>Delete Device</h3>
-	      </div>
-	      <div id="alertbody" class="modal-body">
-
-	      </div>
-		 <div class="modal-footer">
-  			<button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">OK</button>	 
-	    </div>	      
-    </div> 
+<script type="text/javascript">
+    function CheckBeforeSubmission()
+    {
+    	if( ! $('#name').val() ) {
+    		alert('Please enter a name');
+        } else if( ! $('#device').val() ) {
+            alert('Please enter a valid phone number');
+        } else {
+            return true;
+        }
+       return false;
+    }
+</script>
 
 <script type="text/javascript">
 
-
+$('#add_device').button();
 $('#error').hide();
+$('#add_device').click(function() {
+    $(this).button('loading');
+});
 
-showAlert = function(msg) {
-	$('#alertbody').html('<p>'+msg+'</p>');
-	$('#alertmodal').modal('show');
-}
-
-addDevice = function(id) {	
-
+addDevice = function(id) {
 	var html = '<tr id="row_"' +id+ '"><td style="border-top:none"><div class="row well">'+
 				'<h3>'+$('#name').val()+'</h3> '+
 				'<h4>'+ $('#device').val()+'</h4>'+
@@ -171,42 +171,34 @@ addDevice = function(id) {
 				'<a class="btn" id="'+id+'" onClick="deleteDevice(this.id)"><i class="icon-large icon-trash"></i></a>'+
 				'</div></div></td></tr>';
 	//$('#devicetable tr:last').after(html);
-	//$('#devicetable tbody').append(html);
-	var $tr = $('#devicetable').find("tbody tr:last").clone();
+	$('#devicetable tbody').append(html);
+	/*var $tr = $('#devicetable').find("tbody tr:last").clone();
 	$tr.attr("id","row_"+id);
 	$tr.find("#name").text($('#name').val());
 	$tr.find("#phonenumber").text($('#device').val());
 	$tr.find("#map").attr("href","/device/"+id);
 	$tr.find('#delete').attr("id",id);
-	//TODO: click event is not registered properly. 
-	$tr.find('#delete').click(function(id){
-		alert('MANI DELETE '+id);
-	});
-	$('#devicetable').find("tbody tr:last").after($tr); 
+	$('#devicetable').find("tbody tr:last").after($tr); */
 
 	$('#device').val('');
     $('#name').val('');
-    $('#countrycode').val('1');
+
 }
 
-//$("#device_form").submit(function(event){
-submit_addDevice = function() {
+$("#device_form").submit(function(event){
 	$('#error').hide();
 
-    $("#name").attr("disabled", "disabled");
-	$("#device").attr("disabled", "disabled");
-	$("#countrycode").attr("disabled", "disabled");
-	$("#add_device").attr("disabled", "disabled");
+    var $form = $(this),
+        $inputs = $form.find("input, select, button, textarea"),
+        serializedData = $form.serialize();
+
+    $inputs.attr("disabled", "disabled");
 
     // fire post request to /device
     $.ajax({
         url: "/device",
         type: "post",
-        data: { 
-        	'name': $("#name").val(), 
-  			'device': $("#device").val(), 
-  			'countrycode': $("#countrycode").val()
-		},
+        data: serializedData,
         success: function(response, textStatus, jqXHR){
             // log a message to the console
             if( response.code) {
@@ -227,45 +219,29 @@ submit_addDevice = function() {
         },
         complete: function(){
             // enable the inputs
-            $("#name").removeAttr("disabled");
-            $("#device").removeAttr("disabled");
-            $("#countrycode").removeAttr("disabled");
-            $("#add_device").removeAttr("disabled");
+            $inputs.removeAttr("disabled");
         }
-    });// End of ajax.
-}
+    });
 
-addDevicePost = function(){
-
-    var phonenumber = $("#device").val();    
-	if( ! $('#name').val() ) {
-		showAlert('Please enter a name');
-		return;
-    } else if( ! $('#device').val() ) {
-        showAlert('Please enter a valid phone number');
-        return;
-    } if( !(phonenumber.length > 8 && phonenumber.length < 10 )) {
-        showAlert('Invalid Phonenumber');
-        return;
-    } else {
-    	$('#add_device').button('loading');
-    	submit_addDevice();
-    }
-}
-
+    // prevent default posting of form
+    event.preventDefault();
+});
 
 deleteDevice = function(id) {
 
 	var deviceId = id;
+	alert('delete device on click '+deviceId); 
 	$('#deldevicemodal').modal('show');
 
     // fire post request to /device
 	$('#deldevicemodal .yesBtn').click(function() {  
+		alert('delete device id '+deviceId); 
 		$('#deldevicemodal').modal('hide'); 	
 	    $.ajax({
 	        url: "/device/"+id,
 	        type: "delete",
 	        success: function(response, textStatus, jqXHR){
+	        	alert(' Success received ');
 	            // log a message to the console
 	            if( response.code) {
 	            	alert('Error while deleting.');
@@ -301,38 +277,6 @@ deleteAccount = function() {
 	        }
 	    }); // End of ajax	
     });
-}
-
-sendMessage = function() {
-
-	var devicesCount = <%= devices.length %>;
-
-	if( length == 0){
-		alert('No devices registered');
-		return;
-	}
-
-	var pushMessage = $("#message").val();
-	var userId = <%= user_id%>; 
-	alert('send message');	
-	$.ajax({
-	        url: "/push_message_to_all",
-	        data: { 
-	        	'user_id': userId, 
-      			'push_message': pushMessage        		
-    		},
-	        type: "post",
-	        success: function(response, textStatus, jqXHR){
-	            // log a message to the console
-	            alert(response);
-	        },
-	        error: function(jqXHR, textStatus, errorThrown){
-	        	alert(" Error while sending push message "+testStatus+"  : "+errorThrown);
-	        },
-	        complete: function(){
-	            // enable the inputs
-	        }
-	    }); // End of ajax
 }
 
 </script>
