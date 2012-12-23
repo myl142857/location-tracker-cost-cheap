@@ -7,10 +7,10 @@
 	<div class="span5 pull-left">
 		<p><span style="color:blue"><%= device[0].name %>'s</span> movement.</p>
 	</div>
-<div class="span5 pull-right">
-	<textarea class="input-xlarge" id="message" rows="3"></textarea>
-	<button type="submit" id="sendmessage" onClick="sendmessage()" class="btn btn-danger">
-	<i class="icon-trash icon-white"></i> Send Message</button>
+	<div class="span5 pull-right">
+		<textarea class="input-xlarge" id="message" rows="3" placeholder="Maximum 200 characters."></textarea>
+		<button type="submit" id="sendmessage" onClick="sendmessage()" class="btn btn-success">
+		<i class="icon-envelope icon-white"></i> Send Message</button>
 	</div>
 </div>
 
@@ -46,6 +46,28 @@ $(document).ready(function () {
 });
 
 sendmessage = function() {
-	alert($("#message").val());
+	
+	var pushMessage = $("#message").val();
+	var notificationId = <%= device[0].push_notification_id %>;
+	alert(pushMessage+" :: "+notificationId);
+
+	$.ajax({
+	        url: "/push_message_to_all",
+	        data: { 
+	        	'push_notification_id': notificationId, 
+      			'push_message': pushMessage        		
+    		},
+	        type: "post",
+	        success: function(response, textStatus, jqXHR){
+	            // log a message to the console
+	            alert(response);
+	        },
+	        error: function(jqXHR, textStatus, errorThrown){
+	        	alert(" Error while sending push message "+testStatus+"  : "+errorThrown);
+	        },
+	        complete: function(){
+	            // enable the inputs
+	        }
+	    }); // End of ajax
 }
 </script>  

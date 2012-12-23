@@ -1,8 +1,6 @@
 var fs = require('fs');
 var http = require('http');
 var express = require('express');
-var db_helper = require("./db_helper.js");
-var tracker = require('./tracker');
 var geocoder = require('geocoder');
 var mongoStore = require('connect-mongodb');
 var connectTimeout = require('connect-timeout');
@@ -11,8 +9,11 @@ var mongoose = require('mongoose');
 var flash = require('connect-flash');
 var app = express();
 var server = http.createServer(app);
-var sql_model = require('./db_helper');
-var models = require('./models');
+var db_helper = require("./js/db_helper.js");
+var tracker = require('./js/tracker');
+var sql_model = require('./js/db_helper');
+var models = require('./js/models');
+var push = require('./js/push_message');
 
 server.listen(3000);
 
@@ -251,7 +252,7 @@ app.get('/settings', loadUser, function(req, res){
     if( err) {
       // TODO: Handle the error scenario.
     }
-    res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,devices:results});  
+    res.render('settings',{ user: {username:req.currentuser },title:req.currentuser,user_id:req.session.user_id,devices:results});  
   });                    
 });
 
@@ -284,7 +285,7 @@ app.post('/device', loadUser, function(req, res) {
       res.send('{"code":"ER_NO_NAME"}');
     } else {
       // Add to sql_model.
-      sql_model.add_device(req.session.user_id,req.body.name,req.body.countrycode,req.body.device,"aas019jasjer-123923jdjdfuej",function(err,result) {
+      sql_model.add_device(req.session.user_id,req.body.name,req.body.countrycode,req.body.device,"",function(err,result) {
         res.contentType('application/json');
         if( err )  {
             res.send(JSON.stringify(err));
@@ -422,9 +423,49 @@ app.post('/register_push_notificationid', function(req, res) {
 
 // Send push MSG GCM.
 app.post('/push_message', function(req, res) {
+  console.log( " ##########  /POST push_message ############ "+req.body.push_message);
+  console.log("####### /POST push_message  ###### "+req.body.push_notification_id);
+
+  if( !req.body.push_message) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Message is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;    
+  } else if(!req.body.push_notification_id) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Notification ID is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  }
+
+  push.sendMessage(req.body.push_message, function(result) {
+      console.log('###### Send Message result ######## '+result);
+      var jsonResponse = [{ result: '200'}];
+      res.send(JSON.stringify(jsonResponse));      
+  });
 
 });
 
+// Send push MSG GCM.
+app.post('/push_message_to_all', function(req, res) {
+  console.log( " ##########  /POST push_message ############ "+req.body.push_message);
+  console.log("####### /POST push_message  ###### "+req.body.user_id);
+
+  if( !req.body.push_message) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Message is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;    
+  } else if(!req.body.user_id) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"User id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  }
+
+  push.sendMessageToAll(req.body.user_id,req.body.push_message, function(result) {
+      console.log('###### Send Message result ######## '+result);
+      var jsonResponse = [{ result: '200'}];
+      res.send(JSON.stringify(jsonResponse));      
+  });
+
+});
 // Get session_id, phonenumber
 app.post('/update_location', function(request, response) {
   console.log( " ##########  request body ############ "+request.body.latitude+"   "+request.body.longitude+"  "+request.body.accuracy);
