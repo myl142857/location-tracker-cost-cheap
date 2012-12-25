@@ -347,7 +347,7 @@ app.post('/verify_accesscode', function(req, res) {
       if(result.length > 0 ) {
         // Check for accesscode
         if(result[0].accesscode == req.body.accesscode) {
-         var jsonResponse = [{ user_id: result[0].user_id, session_id:result[0].session_id}];
+         var jsonResponse = [{ user_id: result[0].user_id, device_id: result[0].id, session_id:result[0].session_id}];
          res.send(JSON.stringify(jsonResponse));      
          //Update the authenticated status.
          sql_model.updateDeviceWithPh(req.body.phonenumber,req.body.push_notification_id,1,function(err,result){
@@ -416,13 +416,8 @@ app.post('/send_accesscode',function(req,res) {
 
 });
 
-// Register PUSH NOTIFICATION ID
-app.post('/register_push_notificationid', function(req, res) {
-
-});
-
 // Send push MSG GCM.
-app.post('/push_message', function(req, res) {
+app.post('/device/push_message', function(req, res) {
   console.log( " ##########  /POST push_message ############ "+req.body.push_message);
   console.log("####### /POST push_message  ###### "+req.body.push_notification_id);
 
@@ -434,18 +429,29 @@ app.post('/push_message', function(req, res) {
        var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Notification ID is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
-  }
+  } 
 
-  push.sendMessage(req.body.push_message, function(result) {
-      console.log('###### Send Message result ######## '+result);
-      var jsonResponse = [{ result: '200'}];
+  push.sendPushMessage(req.body.push_message, req.body.push_notification_id,function(push_message_id,result) {
+      console.log('###### Send Message result ######## '+push_message_id);
+      // Check for messageId, Add to push_messages table.
+      if( result && result.messageId) {
+        var jsonResponse = [{ result: '200'}];
+        console.log('###### Send Message result FOUND ######## '+result.messageId);
+        sql_model.add_push_message(req.body.device_id,push_message_id,req.body.push_message,req.body.latitude,
+          req.body.longitude,req.body.accuracy,function(add_push_result){
+            console.log(" ###### Result sql model push message ###### "+JSON.stringify(add_push_result));
+          });
+      } else {
+        var jsonResponse = [{errorcode:'3001'},{ error:"Not sent to device."}];
+      }
+      console.log('###### Send Message result response SENT ######## ');
       res.send(JSON.stringify(jsonResponse));      
   });
 
 });
 
 // Send push MSG GCM.
-app.post('/push_message_to_all', function(req, res) {
+app.post('/devices/push_message_to_all', function(req, res) {
   console.log( " ##########  /POST push_message ############ "+req.body.push_message);
   console.log("####### /POST push_message  ###### "+req.body.user_id);
 
@@ -461,11 +467,56 @@ app.post('/push_message_to_all', function(req, res) {
 
   push.sendMessageToAll(req.body.user_id,req.body.push_message, function(result) {
       console.log('###### Send Message result ######## '+result);
+
       var jsonResponse = [{ result: '200'}];
       res.send(JSON.stringify(jsonResponse));      
   });
 
 });
+
+// Get all push messages for a device.
+app.get('/device/:id/push_messages',function(req,res){
+  console.log( " ##########  /GET push_messages ############ "+req.params.id);
+
+ if(!req.params.id) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Device id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  }
+  sql_model.getAllPushMessages(req.params.id,function(err,result) {
+    console.log('###### Send Message result ######## '+JSON.stringify(result));
+    if(err) {
+      res.send([]);      
+    } else {
+      res.send(JSON.stringify(result));
+    }
+  });
+});
+
+// Post: to get response message from user.
+app.post('/respond_push_message', function(request, response) {
+
+  if( !req.body.respond_message) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Respond Message is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;    
+  } else if(!req.body.device_id) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Device id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  } else if(!req.body.push_message_id) {
+       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Message id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  }
+
+  sql_model.add_push_message(req.body.device_id,push_message_id,req.body.respond_message,"user",0,0,0,
+      function(add_push_result){
+        console.log(" ###### Result sql model push message ###### "+JSON.stringify(add_push_result));
+  });
+
+});
+
 // Get session_id, phonenumber
 app.post('/update_location', function(request, response) {
   console.log( " ##########  request body ############ "+request.body.latitude+"   "+request.body.longitude+"  "+request.body.accuracy);

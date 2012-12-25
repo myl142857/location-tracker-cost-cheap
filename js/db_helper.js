@@ -217,7 +217,7 @@ exports.deletePhonumerById = function(id,callback) {
   client.query( " delete from devices where id=?",[id],
       function( err, results, fields)  {
         if( err) {
-          console.log(" ######## DELETE Error ######### "+JSON.stringiy(err));
+          console.log(" ######## DELETE Error ######### "+JSON.stringify(err));
           callback(err,null);
         }
         console.log(" ####### DELETE device  ########"+JSON.stringify(results));
@@ -233,7 +233,7 @@ exports.addPushNotificationId = function(user_id,phonenumber,push_notification_i
 
       function( err, results, fields)  {
         if( err) {
-          console.log(" ######## DELETE Error ######### "+JSON.stringiy(err));
+          console.log(" ######## DELETE Error ######### "+JSON.stringify(err));
           callback(err,null);
         }
         console.log(" ####### DELETE device  ########"+JSON.stringify(results));
@@ -241,10 +241,73 @@ exports.addPushNotificationId = function(user_id,phonenumber,push_notification_i
   });
 }
 
-// Push Notification Messages table.
-// Schema:: [ id, user_id, phonenumber, push_notification_id, admin_message, responded_message, latitude, longitude, accuracy]
+// Push Messages table.
+// Schema:: [ id, device_id, push_message_id (random generated id), Sender(SERVER, DEVICE), push_message,latitude, longitude, accuracy]
 
+exports.add_push_message = function(device_id,push_message_id,push_message,latitude,longitude,accuracy,callback) {
 
+  var dateInMilliseconds = new Date().getTime();
+
+  // Convert millisesconds to date.
+  var a = new Date(dateInMilliseconds);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var year = a.getFullYear();
+  var month = months[a.getMonth()];
+  var date = a.getDate();
+  var hour = a.getHours();
+  var min = a.getMinutes();
+  var sec = a.getSeconds();
+  var time = date+','+month+' '+year+' '+hour+':'+min+':'+sec ;
+  console.log(" ####### TIME is ######### "+time);
+
+  console.log(" #########  add_push_message  ############# "+device_id+" : "+push_message_id+" : "+push_message+" : "+dateInMilliseconds+" : "+latitude+" : "+longitude+" : "+accuracy);
+  // Insert to the table.
+  client.query("insert into push_messages (device_id,push_message_id,push_message,created_at,latitude,longitude,accuracy) values (?,?,?,?,?,?,?)", 
+    [device_id,push_message_id,push_message,dateInMilliseconds,latitude,longitude,accuracy], 
+    function(err, info) {
+      // callback function returns last insert id
+      if( err) {
+        console.log(" ####### ERROR ######## "+JSON.stringify(err));
+        callback(err,null);
+      } else {
+        console.log(" ####### SUCESS ######## "+JSON.stringify(info));
+        callback(err,info.insertId);
+      }
+  });
+
+}
+
+generatePushMessageId = function() {
+  return Math.floor(Math.random()*10000000000001);
+}
+
+exports.checkPushMessageIdPresent = function(id,callback) {
+console.log(" ######## checkPushMessageIdPresent ####### "+id);
+  client.query("select * from push_messages where push_message_id=?",[id],
+    function( err, results, fields)  {
+      if( err) {
+        console.log(" ######## checkPushMessageIdPresent Error ######### "+JSON.stringify(err));
+        callback(false);  
+      } else {
+      console.log(" ####### checkPushMessageIdPresent device  ########"+JSON.stringify(results));
+       callback(true);
+    }
+  });
+}
+
+// Get history of messages sent/received for a device.
+exports.getAllPushMessages = function(device_id,callback){
+  client.query( "select * from push_messages where device_id=?",
+      [device_id],function( err, results, fields)  {
+          if( err) {
+            console.log(" ####### GET all push messages SQL ERROR  ########"+JSON.stringify(err));
+            callback(err,null);
+          } else {
+            console.log(" ####### GET all push messages  ########"+JSON.stringify(results));
+            callback(null,results);
+          }
+  });
+}
 
 
 // Locations table.
