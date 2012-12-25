@@ -316,7 +316,7 @@ sendMessage = function() {
 	var userId = <%= user_id%>; 
 	alert('send message');	
 	$.ajax({
-	        url: "/push_message_to_all",
+	        url: "/devices/push_message_to_all",
 	        data: { 
 	        	'user_id': userId, 
       			'push_message': pushMessage        		

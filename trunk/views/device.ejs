@@ -6,21 +6,38 @@
 <div class='row'>	
 	<div class="span5 pull-left">
 		<p><span style="color:blue"><%= device[0].name %>'s</span> movement.</p>
+		<p style="display:none"> <%= device[0].push_notification_id %> </p>
 	</div>
 	<div class="span5 pull-right">
 		<textarea class="input-xlarge" id="message" rows="3" placeholder="Maximum 200 characters."></textarea>
-		<button type="submit" id="sendmessage" onClick="sendmessage()" class="btn btn-success">
+		<button id="sendmessage" onClick="sendmessage()" class="btn btn-success">
 		<i class="icon-envelope icon-white"></i> Send Message</button>
+		<button onClick="getPushMessagesHistory()" class="btn btn-success">
+		<i class="icon-envelope icon-white"></i> Get Message</button>		
 	</div>
 </div>
-
+<p id="regid" style="display:none">APA91bF9Q7A9ZT02xOLWTNTgn3Bzd9BSIR1gh8tMd5S8dBC3BoPD0hnZeUkB0JKVyzawsuZTNJPDmvLcER9I7c52xFtuFbqwRvQ-o8lWa9pd64CtoYP_F1YhglLTNWLNH6TlRMu5zhdB</p>
+<p id="deviceid" style="display:none"> <%= device[0].id %> </p>
 <table class="table">
 	<tr>
 		<td style="border-top:none">
 			<div width="75%" id="map_canvas"/>
 		</td>
-		<td style="border-top:none" width="25%" id="table_location"> 
-				list of deivces
+		<td style="border-top:none" style="background:#ff00ff" width="25%" id="table_location"> 
+    		
+			<div class="span5">
+		      <ul class="nav nav-tabs">
+		        <li class="active"><a href="#movement_history" data-toggle="tab">Movement History</a></li>
+		        <li><a href="#messages_history" data-toggle="tab"> Messages Sent</a></li>
+		      </ul>
+		      <div class="tabbable">
+		        <div class="tab-content">
+		          <div class="tab-pane active" id="movement_history"></div>
+		          <div class="tab-pane" id="messages_history"></div>		            
+		        </div>
+		      </div> <!-- /tabbable -->      
+		    </div>
+
 		</td>
 	</tr>
 </table>
@@ -39,23 +56,31 @@ $(document).ready(function () {
 	var mapOptions = {
 	  center: new google.maps.LatLng(-34.397, 150.644),
 	  zoom: 8,
-	  mapTypeId: google.maps.MapTypeId.ROADMAP
+	  mapTypeId: google.maps.MapTypeId.ROADMAP,
+	  scrollwheel: false
 	};
 
 	var map = new google.maps.Map(document.getElementById("map_canvas"),mapOptions);
+	
+	//Fetch the locations & push notification messages.
+	
 });
 
 sendmessage = function() {
 	
 	var pushMessage = $("#message").val();
-	var notificationId = <%= device[0].push_notification_id %>;
-	alert(pushMessage+" :: "+notificationId);
+	var notificationId = $("#regid").html();
+	var deviceid = $("#deviceid").html();
 
 	$.ajax({
-	        url: "/push_message_to_all",
+	        url: "/device/push_message",
 	        data: { 
 	        	'push_notification_id': notificationId, 
-      			'push_message': pushMessage        		
+	        	'device_id':deviceid,
+      			'push_message': pushMessage,
+      			'latitude':'1.22323231',
+      			'longitude':'0.9281121',
+      			'accuracy':'1000'        		
     		},
 	        type: "post",
 	        success: function(response, textStatus, jqXHR){
@@ -69,5 +94,56 @@ sendmessage = function() {
 	            // enable the inputs
 	        }
 	    }); // End of ajax
+}
+
+getPushMessagesHistory = function() {
+		
+	var deviceid = $("#deviceid").html();
+	alert(' get push message history device :: '+deviceid);
+	$.ajax({
+	        url: "/device/"+deviceid+"/push_messages",
+	        type: "get",
+	        success: function(response, textStatus, jqXHR){
+	            // log a message to the console
+	            alert(response);
+	            parsePushHistoryResponse(response);
+	        },
+	        error: function(jqXHR, textStatus, errorThrown){
+	        	alert(" Error while sending push message "+testStatus+"  : "+errorThrown);
+	        },
+	        complete: function(){
+	            // enable the inputs
+	        }
+	}); // End of ajax
+}
+
+parsePushHistoryResponse = function(response) {
+	
+	//movement_history
+	if(response.length == 0) {
+		$("#messages_history").html("<p> No Messages sent </p>");
+		return;
+	} 
+	var result = JSON.parse(response);
+	var html="";
+	for(var i = 0; i< result.length; i++){
+		var message = result[i].push_message;
+		var created_at = result[i].created_at;	
+		//html += '<img src="images/server_sent.png" height="22" width="22">';	
+		html += " <h4>"+message+"</h4> <small> ";
+		var tt = new Date().getTime();
+		//alert(created_at+" : "+tt);
+		var a = new Date(tt);
+	  	var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+	  	var year = a.getFullYear();
+	  	var month = months[a.getMonth()];
+	  	var date = a.getDate();
+	  	var hour = a.getHours();
+	  	var min = a.getMinutes();
+	  	var sec = a.getSeconds();
+	  	var time = date+','+month+' '+year+' '+hour+':'+min+':'+sec ;
+	  	html += time+"</small>";
+	}
+	$("#messages_history").html(html);
 }
 </script>  
