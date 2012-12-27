@@ -320,36 +320,56 @@ app.get('/devices', loadUser, function(req, res) {
 });
 
 // Authenticate access code & phonenumber
+// 422; 3001; Missing mandator Parameter for: phonenumber
+// 422; 3002; Missing mandator Parameter for: accesscode
+// 422; 3003; Missing mandator Parameter for: push_notification_id
+// 422; 3004; Missing mandator Parameter for: device_os
+// 422; 3005; Invalid parameter for: phonenumber
+// 422; 3006; Invalid parameter for: accesscode
+// 404; 3011; Record not found for: accesscode
+// 404; 3012; Record not found for: phonenumber
+// 400; 3012; Permission denied
+// 401; 1013; Invalid session
 app.post('/verify_accesscode', function(req, res) {
   console.log( " ##########  /POST verify_accesscode ############ "+req.body.phonenumber);
   console.log( " ##########  /POST push notification id ############ "+req.body.push_notification_id);
   console.log( " ##########  /POST device os ############ "+req.body.device_os);
 
-  if( !req.body.phonenumber || !req.body.accesscode) {
-       var jsonResponse = [{errorcode:'3003'},{ error:"Missing mandatory parameters."}];
+  if( !req.body.phonenumber) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Phonenumber is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;    
+  } else if(!req.body.accesscode) {
+       var jsonResponse = [{status:'422'},{errorcode:'3002', error:"Missing mandatory parameters.", extra_info:"Accesscode is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
   } else if(!req.body.push_notification_id) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Notification ID is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3003', error:"Missing mandatory parameters.", extra_info:"Push Notification ID is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
   } else if(!req.body.device_os) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Device OS is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3004', error:"Missing mandatory parameters.", extra_info:"Device OS is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
+  } else if( req.body.phonenumber instanceof string) {
+      //TODO: Check if phonenumber contains valid number and between 8 to 10 number range.
+      var jsonResponse = [{status:'422'},{errorcode:'3005', error:"Invalid Parameter.",extra_info:"phonenumber"}];
+  } else if( req.body.accesscode instanceof string) {
+      var jsonResponse = [{status:'422'},{errorcode:'3006', error:"Invalid Parameter.",extra_info:"accesscode"}];
   }
+
   // Return the userid,session_id,
   sql_model.getDeviceByPhNumber(req.body.phonenumber,function(err,result) {
     if(err) {
-       var jsonResponse = [{ error:"SQL error"}];
+       var jsonResponse = [{status:'404'},{errorcode:'3001',error:"SQL error"}];
        res.send(JSON.stringify(jsonResponse));      
     } else {
       if(result.length > 0 ) {
         // Check for accesscode
         if(result[0].accesscode == req.body.accesscode) {
-         var jsonResponse = [{ user_id: result[0].user_id, device_id: result[0].id, session_id:result[0].session_id}];
+         var jsonResponse = [{status:'200'},{ user_id: result[0].user_id, device_id: result[0].id, session_id:result[0].session_id}];
          res.send(JSON.stringify(jsonResponse));      
-         //Update the authenticated status.
+         //Update the authenticated status & push_notification_id.
          sql_model.updateDeviceWithPh(req.body.phonenumber,req.body.push_notification_id,1,function(err,result){
             if( err ) {
               console.log("Update authenticated ERROR");
@@ -358,14 +378,12 @@ app.post('/verify_accesscode', function(req, res) {
             }
          });
 
-         // Add the push notification id against phonenumber,user id.
-
         } else {
-         var jsonResponse = [{errorcode:'3002'},{ error:"Invalid accesscode"}];
+         var jsonResponse = [{status:'404'},{errorcode:'3002',error:"Invalid accesscode"}];
          res.send(JSON.stringify(jsonResponse));                
         }
       } else {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Invalid phonenumber"}];
+       var jsonResponse = [{status:'404'},{errorcode:'3001', error:"Invalid phonenumber"}];
        res.send(JSON.stringify(jsonResponse));      
       }
     }
@@ -437,8 +455,8 @@ app.post('/device/push_message', function(req, res) {
       if( result && result.messageId) {
         var jsonResponse = [{ result: '200'}];
         console.log('###### Send Message result FOUND ######## '+result.messageId);
-        sql_model.add_push_message(req.body.device_id,push_message_id,req.body.push_message,req.body.latitude,
-          req.body.longitude,req.body.accuracy,function(add_push_result){
+        sql_model.add_push_message(req.body.device_id,push_message_id,req.body.push_message,"server",req.body.latitude,
+          req.body.longitude,req.body.accuracy,function(err,add_push_result){
             console.log(" ###### Result sql model push message ###### "+JSON.stringify(add_push_result));
           });
       } else {
@@ -494,8 +512,9 @@ app.get('/device/:id/push_messages',function(req,res){
 });
 
 // Post: to get response message from user.
-app.post('/respond_push_message', function(request, response) {
+app.post('/respond_push_message', function(req, res) {
 
+  console.log(" ####### /POST respond_push_message ####### "+req.body.respond_message+" : "+req.body.device_id+" : "+req.body.push_message_id);
   if( !req.body.respond_message) {
        var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Respond Message is missing"}];
        res.send(JSON.stringify(jsonResponse));  
@@ -510,9 +529,12 @@ app.post('/respond_push_message', function(request, response) {
        return;
   }
 
-  sql_model.add_push_message(req.body.device_id,push_message_id,req.body.respond_message,"user",0,0,0,
-      function(add_push_result){
+  sql_model.add_push_message(req.body.device_id,req.body.push_message_id,req.body.respond_message,"user",0,0,0,
+      function(err,add_push_result){
         console.log(" ###### Result sql model push message ###### "+JSON.stringify(add_push_result));
+        var jsonResponse = [{status:'200'},{push_message_id:req.body.push_message_id,respond_message:req.body.respond_message}];
+       res.send(JSON.stringify(jsonResponse));  
+
   });
 
 });
