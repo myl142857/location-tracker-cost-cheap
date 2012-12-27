@@ -128,12 +128,20 @@ parsePushHistoryResponse = function(response) {
 	var html="";
 	for(var i = 0; i< result.length; i++){
 		var message = result[i].push_message;
-		var created_at = result[i].created_at;	
+		var created_at = parseInt(result[i].created_at);	
+		var sender = result[i].sender;
+
 		//html += '<img src="images/server_sent.png" height="22" width="22">';	
+		alert(sender);
+		if( sender == 'server')
+			html += '<div align="left" style="background:#99cc66">';
+		else if( sender == 'user')
+			html += '<div align="right" style="background:#99cccc">';
+
 		html += " <h4>"+message+"</h4> <small> ";
 		var tt = new Date().getTime();
-		//alert(created_at+" : "+tt);
-		var a = new Date(tt);
+		alert(created_at+" : "+tt);
+		var a = new Date(created_at);
 	  	var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 	  	var year = a.getFullYear();
 	  	var month = months[a.getMonth()];
@@ -142,7 +150,7 @@ parsePushHistoryResponse = function(response) {
 	  	var min = a.getMinutes();
 	  	var sec = a.getSeconds();
 	  	var time = date+','+month+' '+year+' '+hour+':'+min+':'+sec ;
-	  	html += time+"</small>";
+	  	html += time+"</small></div>";
 	}
 	$("#messages_history").html(html);
 }

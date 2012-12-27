@@ -41,8 +41,8 @@ sendMessage = function(push_message,push_id,push_message_id,callback) {
 	message.delayWhileIdle = true;
 	message.timeToLive = 3;
 	var registrationIds = [];
-	//registrationIds.push(push_id);
-	registrationIds.push('APA91bF9Q7A9ZT02xOLWTNTgn3Bzd9BSIR1gh8tMd5S8dBC3BoPD0hnZeUkB0JKVyzawsuZTNJPDmvLcER9I7c52xFtuFbqwRvQ-o8lWa9pd64CtoYP_F1YhglLTNWLNH6TlRMu5zhdB');
+	registrationIds.push(push_id);
+	//registrationIds.push('APA91bF9Q7A9ZT02xOLWTNTgn3Bzd9BSIR1gh8tMd5S8dBC3BoPD0hnZeUkB0JKVyzawsuZTNJPDmvLcER9I7c52xFtuFbqwRvQ-o8lWa9pd64CtoYP_F1YhglLTNWLNH6TlRMu5zhdB');
 	sender.send(message, registrationIds, 4, function (result) {
     	console.log(" #### Push message Result  ####### "+JSON.stringify(result));
     	if( !result) {

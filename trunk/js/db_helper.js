@@ -244,7 +244,7 @@ exports.addPushNotificationId = function(user_id,phonenumber,push_notification_i
 // Push Messages table.
 // Schema:: [ id, device_id, push_message_id (random generated id), Sender(SERVER, DEVICE), push_message,latitude, longitude, accuracy]
 
-exports.add_push_message = function(device_id,push_message_id,push_message,latitude,longitude,accuracy,callback) {
+exports.add_push_message = function(device_id,push_message_id,push_message,sender,latitude,longitude,accuracy,callback) {
 
   var dateInMilliseconds = new Date().getTime();
 
@@ -260,10 +260,10 @@ exports.add_push_message = function(device_id,push_message_id,push_message,latit
   var time = date+','+month+' '+year+' '+hour+':'+min+':'+sec ;
   console.log(" ####### TIME is ######### "+time);
 
-  console.log(" #########  add_push_message  ############# "+device_id+" : "+push_message_id+" : "+push_message+" : "+dateInMilliseconds+" : "+latitude+" : "+longitude+" : "+accuracy);
+  console.log(" #########  add_push_message  ############# "+device_id+" : "+push_message_id+" : "+push_message+" : "+dateInMilliseconds+" : "+sender+" : "+latitude+" : "+longitude+" : "+accuracy);
   // Insert to the table.
-  client.query("insert into push_messages (device_id,push_message_id,push_message,created_at,latitude,longitude,accuracy) values (?,?,?,?,?,?,?)", 
-    [device_id,push_message_id,push_message,dateInMilliseconds,latitude,longitude,accuracy], 
+  client.query("insert into push_messages (device_id,push_message_id,push_message,sender,created_at,latitude,longitude,accuracy) values (?,?,?,?,?,?,?,?)", 
+    [device_id,push_message_id,push_message,sender,dateInMilliseconds,latitude,longitude,accuracy], 
     function(err, info) {
       // callback function returns last insert id
       if( err) {
@@ -297,7 +297,7 @@ console.log(" ######## checkPushMessageIdPresent ####### "+id);
 
 // Get history of messages sent/received for a device.
 exports.getAllPushMessages = function(device_id,callback){
-  client.query( "select * from push_messages where device_id=?",
+  client.query( "select * from push_messages where device_id=? order by push_message_id,created_at",
       [device_id],function( err, results, fields)  {
           if( err) {
             console.log(" ####### GET all push messages SQL ERROR  ########"+JSON.stringify(err));
