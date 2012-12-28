@@ -8,7 +8,7 @@
 		<p><span style="color:blue"><%= device[0].name %>'s</span> movement.</p>
 		<p style="display:none"> <%= device[0].push_notification_id %> </p>
 	</div>
-	<div class="span5 pull-right">
+	<div id="sendform" class="span5 pull-right">
 		<textarea class="input-xlarge" id="message" rows="3" placeholder="Maximum 200 characters."></textarea>
 		<button id="sendmessage" onClick="sendmessage()" class="btn btn-success">
 		<i class="icon-envelope icon-white"></i> Send Message</button>
@@ -61,14 +61,17 @@ $(document).ready(function () {
 	};
 
 	var map = new google.maps.Map(document.getElementById("map_canvas"),mapOptions);
-	
-	//Fetch the locations & push notification messages.
-	
+	setTimeout('getPushMessagesHistory()', 1000);
 });
 
 sendmessage = function() {
 	
+
 	var pushMessage = $("#message").val();
+	if( pushMessage.length == 0) {
+		alert(' Please enter a message');
+		return;
+	}
 	var notificationId = $("#regid").html();
 	var deviceid = $("#deviceid").html();
 
@@ -85,7 +88,12 @@ sendmessage = function() {
 	        type: "post",
 	        success: function(response, textStatus, jqXHR){
 	            // log a message to the console
-	            alert(response);
+	            var result = JSON.parse(response);
+	            if( result[0].status == '200') {
+	              alert(' Successfully sent the message');
+	            } else if( result[0].status == '400') {
+	            	alert(' ERROR: Sending message '+result[1].error);
+	            }
 	        },
 	        error: function(jqXHR, textStatus, errorThrown){
 	        	alert(" Error while sending push message "+testStatus+"  : "+errorThrown);
@@ -99,7 +107,6 @@ sendmessage = function() {
 getPushMessagesHistory = function() {
 		
 	var deviceid = $("#deviceid").html();
-	alert(' get push message history device :: '+deviceid);
 	$.ajax({
 	        url: "/device/"+deviceid+"/push_messages",
 	        type: "get",
@@ -109,7 +116,7 @@ getPushMessagesHistory = function() {
 	            parsePushHistoryResponse(response);
 	        },
 	        error: function(jqXHR, textStatus, errorThrown){
-	        	alert(" Error while sending push message "+testStatus+"  : "+errorThrown);
+	        	alert(" Error while getting message history "+testStatus+"  : "+errorThrown);
 	        },
 	        complete: function(){
 	            // enable the inputs
@@ -130,17 +137,15 @@ parsePushHistoryResponse = function(response) {
 		var message = result[i].push_message;
 		var created_at = parseInt(result[i].created_at);	
 		var sender = result[i].sender;
+		if( sender == 'server') {
+			html += '<div align="left" style="background:#99cc66;padding:5px">';
+			html += '<img src="/images/server_sent.png" height="22" width="22">';			
+		} else if( sender == 'user') {
+			html += '<div align="right" style="background:#99cccc;padding:5px">';
+		}
 
-		//html += '<img src="images/server_sent.png" height="22" width="22">';	
-		alert(sender);
-		if( sender == 'server')
-			html += '<div align="left" style="background:#99cc66">';
-		else if( sender == 'user')
-			html += '<div align="right" style="background:#99cccc">';
-
-		html += " <h4>"+message+"</h4> <small> ";
-		var tt = new Date().getTime();
-		alert(created_at+" : "+tt);
+		
+		html += " <h3>"+message+"</h3> <small> ";
 		var a = new Date(created_at);
 	  	var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 	  	var year = a.getFullYear();
@@ -150,7 +155,10 @@ parsePushHistoryResponse = function(response) {
 	  	var min = a.getMinutes();
 	  	var sec = a.getSeconds();
 	  	var time = date+','+month+' '+year+' '+hour+':'+min+':'+sec ;
-	  	html += time+"</small></div>";
+	  	html += time+"</small>";
+	  	if(sender == 'user')
+	  		html+='<img src="/images/server_received.png" height="22" width="22">';	
+	  	html += "</div>";
 	}
 	$("#messages_history").html(html);
 }

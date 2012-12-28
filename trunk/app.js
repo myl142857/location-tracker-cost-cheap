@@ -396,21 +396,21 @@ app.post('/send_accesscode',function(req,res) {
   console.log( " ##########  /POST send_accesscode ############ "+req.body.phonenumber+"   "+res.body.accesscode);
 
   if( !req.body.phonenumber) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Phonenumber is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Phonenumber is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;    
   } 
 
   sql_model.getDeviceByPhNumber(req.body.phonenumber,function(err,result) {
     if(err) {
-       var jsonResponse = [{ error:"SQL error"}];
+       var jsonResponse = [{status:'422'},{ error:"SQL error"}];
        res.send(JSON.stringify(jsonResponse));      
     } else {
       if(result.length > 0 ) {
         // Check for accesscode
         // Get phone number, country code, send SMS.
         if(result[0].accesscode == req.body.accesscode) {
-         var jsonResponse = [{ user_id: result[0].user_id, session_id:result[0].session_id}];
+         var jsonResponse = [{status:'200'},{ user_id: result[0].user_id, session_id:result[0].session_id}];
          res.send(JSON.stringify(jsonResponse));      
          //Update the authenticated status.
          sql_model.updateDeviceWithPh(req.body.phonenumber,1,function(err,result){
@@ -421,11 +421,11 @@ app.post('/send_accesscode',function(req,res) {
             }
          });
         } else {
-         var jsonResponse = [{errorcode:'3002'},{ error:"Invalid accesscode"}];
+         var jsonResponse = [{status:'422'},{errorcode:'3002', error:"Invalid accesscode"}];
          res.send(JSON.stringify(jsonResponse));                
         }
       } else {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Invalid phonenumber"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Invalid phonenumber"}];
        res.send(JSON.stringify(jsonResponse));      
       }
     }
@@ -440,11 +440,11 @@ app.post('/device/push_message', function(req, res) {
   console.log("####### /POST push_message  ###### "+req.body.push_notification_id);
 
   if( !req.body.push_message) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Message is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Push Message is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;    
   } else if(!req.body.push_notification_id) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Notification ID is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Push Notification ID is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
   } 
@@ -453,14 +453,20 @@ app.post('/device/push_message', function(req, res) {
       console.log('###### Send Message result ######## '+push_message_id);
       // Check for messageId, Add to push_messages table.
       if( result && result.messageId) {
-        var jsonResponse = [{ result: '200'}];
+        var jsonResponse = [{ status: '200'}];
         console.log('###### Send Message result FOUND ######## '+result.messageId);
         sql_model.add_push_message(req.body.device_id,push_message_id,req.body.push_message,"server",req.body.latitude,
           req.body.longitude,req.body.accuracy,function(err,add_push_result){
             console.log(" ###### Result sql model push message ###### "+JSON.stringify(add_push_result));
           });
       } else {
-        var jsonResponse = [{errorcode:'3001'},{ error:"Not sent to device."}];
+        // Check for errorCode{"errorCode":"NotRegistered"},InvalidRegistration,MessageTooBig,InternalServerError
+        if(result.errorCode && result.errorCode == 'NotRegistered') {
+          var jsonResponse = [{status:'400'},{error:result.errorCode}];
+          // Remove from db or mark it as not registered.
+
+        } else 
+        var jsonResponse = [{status:'400'},{error:result.errorCode}];
       }
       console.log('###### Send Message result response SENT ######## ');
       res.send(JSON.stringify(jsonResponse));      
@@ -474,11 +480,11 @@ app.post('/devices/push_message_to_all', function(req, res) {
   console.log("####### /POST push_message  ###### "+req.body.user_id);
 
   if( !req.body.push_message) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Message is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Push Message is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;    
   } else if(!req.body.user_id) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"User id is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"User id is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
   }
@@ -486,7 +492,7 @@ app.post('/devices/push_message_to_all', function(req, res) {
   push.sendMessageToAll(req.body.user_id,req.body.push_message, function(result) {
       console.log('###### Send Message result ######## '+result);
 
-      var jsonResponse = [{ result: '200'}];
+      var jsonResponse = [{ status: '200'}];
       res.send(JSON.stringify(jsonResponse));      
   });
 
@@ -497,7 +503,7 @@ app.get('/device/:id/push_messages',function(req,res){
   console.log( " ##########  /GET push_messages ############ "+req.params.id);
 
  if(!req.params.id) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Device id is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Device id is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
   }
@@ -516,15 +522,15 @@ app.post('/respond_push_message', function(req, res) {
 
   console.log(" ####### /POST respond_push_message ####### "+req.body.respond_message+" : "+req.body.device_id+" : "+req.body.push_message_id);
   if( !req.body.respond_message) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Respond Message is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Respond Message is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;    
   } else if(!req.body.device_id) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Device id is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Device id is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
   } else if(!req.body.push_message_id) {
-       var jsonResponse = [{errorcode:'3001'},{ error:"Missing mandatory parameters."},{extra_info:"Push Message id is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Push Message id is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
   }
