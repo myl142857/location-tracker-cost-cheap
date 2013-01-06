@@ -9,6 +9,12 @@ var mongoose = require('mongoose');
 var flash = require('connect-flash');
 var app = express();
 var server = http.createServer(app);
+var io = require('socket.io').listen(server);
+var push_message_socket = io.of("/push_messages");
+var location_movement_socket = io.of("/locations");
+var connect = require('express/node_modules/connect');
+var parseSignedCookie = connect.utils.parseSignedCookie;
+var cookie = require('express/node_modules/cookie');
 var db_helper = require("./js/db_helper.js");
 var tracker = require('./js/tracker');
 var sql_model = require('./js/db_helper');
@@ -47,7 +53,8 @@ app.configure(function(){
   app.use(express.bodyParser());
   app.use(express.cookieParser()); 
   app.use(connectTimeout({ time: 20000 }));
-  app.use(express.session({ store: mongoStore(app.set('db-uri')), secret: 'avinashmahesh' }));
+  app.use(express.session({secret: 'secret', key: 'express.sid'}));
+  //app.use(express.session({ store: mongoStore(app.set('db-uri')), secret: 'avinashmahesh' }));
   app.use(express.logger({ format: '\x1b[1m:method\x1b[0m \x1b[33m:url\x1b[0m :response-time ms' }))
   app.use(express.methodOverride());
   app.use(flash());
@@ -269,6 +276,7 @@ app.get('/device/:id', loadUser, function(req, res){
       //TODO: Handle the error scenario.
     } else {
       devicedata = result;
+      req.session.device_id = req.params.id;
       res.render('device',{ title:req.currentuser, user: {username:req.currentuser}, device: devicedata,locations:locationsList } );
     }
   });  
@@ -436,7 +444,7 @@ app.post('/send_accesscode',function(req,res) {
 
 // Send push MSG GCM.
 app.post('/device/push_message', function(req, res) {
-  console.log( " ##########  /POST push_message ############ "+req.body.push_message);
+  console.log( "##########  /POST push_message ############ "+req.body.push_message);
   console.log("####### /POST push_message  ###### "+req.body.push_notification_id);
 
   if( !req.body.push_message) {
@@ -465,8 +473,9 @@ app.post('/device/push_message', function(req, res) {
           var jsonResponse = [{status:'400'},{error:result.errorCode}];
           // Remove from db or mark it as not registered.
 
-        } else 
-        var jsonResponse = [{status:'400'},{error:result.errorCode}];
+        } else {
+          var jsonResponse = [{status:'400'},{error:result.errorCode}];
+        }
       }
       console.log('###### Send Message result response SENT ######## ');
       res.send(JSON.stringify(jsonResponse));      
@@ -491,11 +500,9 @@ app.post('/devices/push_message_to_all', function(req, res) {
 
   push.sendMessageToAll(req.body.user_id,req.body.push_message, function(result) {
       console.log('###### Send Message result ######## '+result);
-
       var jsonResponse = [{ status: '200'}];
       res.send(JSON.stringify(jsonResponse));      
   });
-
 });
 
 // Get all push messages for a device.
@@ -508,11 +515,14 @@ app.get('/device/:id/push_messages',function(req,res){
        return;
   }
   sql_model.getAllPushMessages(req.params.id,function(err,result) {
-    console.log('###### Send Message result ######## '+JSON.stringify(result));
+    
     if(err) {
       res.send([]);      
     } else {
-      res.send(JSON.stringify(result));
+      var jsonResponse = [{ status: '200'}];
+      jsonResponse.push(JSON.stringify(result));
+      console.log('###### Send Message result ######## '+JSON.stringify(jsonResponse));
+      res.send(jsonResponse);
     }
   });
 });
@@ -534,13 +544,16 @@ app.post('/respond_push_message', function(req, res) {
        res.send(JSON.stringify(jsonResponse));  
        return;
   }
+  
+  
 
   sql_model.add_push_message(req.body.device_id,req.body.push_message_id,req.body.respond_message,"user",0,0,0,
       function(err,add_push_result){
         console.log(" ###### Result sql model push message ###### "+JSON.stringify(add_push_result));
         var jsonResponse = [{status:'200'},{push_message_id:req.body.push_message_id,respond_message:req.body.respond_message}];
-       res.send(JSON.stringify(jsonResponse));  
-
+        res.send(JSON.stringify(jsonResponse));  
+        // Update the response to the UI, with help of sockets.
+        push_message_socket.in("1,5").emit('update', { name:"device", message:"New push message"});
   });
 
 });
@@ -570,21 +583,86 @@ app.post('/update_location', function(request, response) {
 });
 
 var clientcon;
-var io = require('socket.io').listen(server);
 
-io.sockets.on('connection', function(client) {
+io.configure(function() {
+    io.set('authorization', function (handshakeData, accept) {
+      console.log(" ######## Socket io authorization ######### "+JSON.stringify(handshakeData));    
+      if (handshakeData.headers.cookie) {
+        
+        handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
+        handshakeData.sessionID = parseSignedCookie(handshakeData.cookie['express.sid'], 'secret');
+        console.log(" ######## Socket io authorization cookie ######### "+handshakeData.cookie['express.sid']+" : "+handshakeData.sessionID);
+        
+        if (handshakeData.cookie['express.sid'] == handshakeData.sessionID) {
+          console.log(" ######## Socket io authorization MATCH ######### "+handshakeData.cookie['express.sid']+" : "+handshakeData.sessionID);
+          return accept('Cookie is invalid.', false);
+        }
 
-  clientcon = client;
-  // populate employees on client
-  db_helper.get_locations(function(locations) {
-    console.log('************** Server Emit POPULATE *********** '+clientcon);
-    client.emit('populate', locations);
+      } else {
+        console.log(" ######## Socket io no cookie transmitted ######### ");
+        return accept('No cookie transmitted.', false);
+      } 
+      console.log(" ######## Socket io accepted ######### ");
+      accept(null, true);
   });
+}); 
+
+
+push_message_socket.on('connection', function(socket) {
+
+  var hs = socket.handshake;
+  console.log('########## A client connected ####### socketID ' +socket.id+' #### '+JSON.stringify(socket.handshake));
+
+  socket.on("device", function(data)
+  {
+      try
+      {
+        console.log('########## user emit #######' + JSON.stringify(data));
+        console.log('########## user emit #######' + data.device_id);
+        // Make sure we have the data we need...
+        if (data == null || (data.device_id || null) == null) {
+            return;
+        }
+        // Join the user to their own private channel so we can send them notifications...
+        socket.join(data.device_id);  
+      } catch (e) { 
+        console.log(e); 
+      }
+  });
+
+  socket.emit('populate', "XXXxxxxxxxxxx");
   
-  // client add new employee
-  client.on('add location', add_location); 
+  //client.on('add location', add_location); 
   
-}); // End of socket.io
+}); // End of push_messages socket.io
+
+location_movement_socket.on('connection', function(socket) {
+
+  var hs = socket.handshake;
+  console.log('########## A client connected ####### socketID ' +socket.id+' #### '+JSON.stringify(socket.handshake));
+
+  socket.on("device", function(data)
+  {
+      try
+      {
+        console.log('########## user emit #######' + JSON.stringify(data));
+        console.log('########## user emit #######' + data.device_id);
+        // Make sure we have the data we need...
+        if (data == null || (data.device_id || null) == null) {
+            return;
+        }
+        // Join the user to their own private channel so we can send them notifications...
+        socket.join(data.device_id);  
+      } catch (e) { 
+        console.log(e); 
+      }
+  });
+
+  socket.emit('populate', "XXXxxxxxxxxxx");
+  
+  //client.on('add location', add_location); 
+  
+}); // End of location movement socket.io
 
 add_location = function(data) {
 

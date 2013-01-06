@@ -1,31 +1,39 @@
 <% layout('device_header') -%>
 <% stylesheet('/css/map.css') -%>
+<% stylesheet('http://cdn.leafletjs.com/leaflet-0.4/leaflet.css') -%>
+<% stylesheet('/leaflet/leaflet.label.css') -%>
+
+
 <% script('https://maps.googleapis.com/maps/api/js?key=AIzaSyA9hZO1Yz7lBgNJiKfu5qznUxk2EhuqbxI&sensor=true') -%>
 <% script('http://localhost:3000/socket.io/socket.io.js') -%>
+<% script ('http://cdn.leafletjs.com/leaflet-0.4/leaflet.js') -%>
+<% script('/leaflet/leaflet.label.js') -%>
+<% script('/leaflet/leaflet.zoomfs.js') -%>
+<% script('/leaflet/AnimatedMarker.js') -%>
+<% script('/leaflet/raphael/rlayer-src.js') -%>
+<% script('/leaflet/raphael/raphael-min.js') -%>
 
-<div class='row'>	
-	<div class="span5 pull-left">
-		<p><span style="color:blue"><%= device[0].name %>'s</span> movement.</p>
-		<p style="display:none"> <%= device[0].push_notification_id %> </p>
-	</div>
-	<div id="sendform" class="span5 pull-right">
-		<textarea class="input-xlarge" id="message" rows="3" placeholder="Maximum 200 characters."></textarea>
-		<button id="sendmessage" onClick="sendmessage()" class="btn btn-success">
-		<i class="icon-envelope icon-white"></i> Send Message</button>
-		<button onClick="getPushMessagesHistory()" class="btn btn-success">
-		<i class="icon-envelope icon-white"></i> Get Message</button>		
-	</div>
-</div>
 <p id="regid" style="display:none">APA91bF9Q7A9ZT02xOLWTNTgn3Bzd9BSIR1gh8tMd5S8dBC3BoPD0hnZeUkB0JKVyzawsuZTNJPDmvLcER9I7c52xFtuFbqwRvQ-o8lWa9pd64CtoYP_F1YhglLTNWLNH6TlRMu5zhdB</p>
 <p id="deviceid" style="display:none"> <%= device[0].id %> </p>
+<p style="display:none"> <%= device[0].push_notification_id %> </p>
+<div class="span6 pull-left">
+	<h3><span style="color:blue"><%= device[0].name %>'s</span> movement.</h3>				
+</div>
+
 <table class="table">
 	<tr>
-		<td style="border-top:none">
-			<div width="75%" id="map_canvas"/>
+		<td width="75%" style="border-top:none;padding:0px;">
+			<div id="map" class="leaflet-container leaflet-fullscreen">
 		</td>
-		<td style="border-top:none" style="background:#ff00ff" width="25%" id="table_location"> 
-    		
-			<div class="span5">
+		<td style="border-top:none;padding-top:0px" width="30%" id="table_location"> 
+			<div id="sendform" class="pull-right">
+				<textarea class="input-xlarge" id="message" rows="3" placeholder="Maximum 200 characters."></textarea>
+				<button id="sendmessage" onClick="sendmessage()" class="btn btn-success">
+				<i class="icon-envelope icon-white"></i> Send Message</button>
+				<br/><br/>		
+			</div>
+			
+			<div>
 		      <ul class="nav nav-tabs">
 		        <li class="active"><a href="#movement_history" data-toggle="tab">Movement History</a></li>
 		        <li><a href="#messages_history" data-toggle="tab"> Messages Sent</a></li>
@@ -50,23 +58,162 @@
     <button class="btn btn-primary" id='save' >Save</button>
 </form>
 
+<div id="alertmodal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-header">
+        <h3>Delete Device</h3>
+      </div>
+      <div id="alertbody" class="modal-body">
+
+      </div>
+	 <div class="modal-footer">
+			<button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">OK</button>	 
+    </div>	      
+</div> 
 <script type="text/javascript"> 
 
+var pushMessageSocket;
+var locationSocket;
 $(document).ready(function () {
-	var mapOptions = {
+	
+	pushMessageSocket  = io.connect('http://localhost:3000/push_messages');
+	locationSocket = io.connect('http://localhost:3000/locations');
+
+	pushMessageSocket.socket.on('error', function (reason){
+		alert('Unable to connect Socket.IO'+reason);
+	});
+
+	pushMessageSocket.on('connect', function (){	  
+		socket.emit("device", { device_id:<%= device[0].id %> });
+	});
+
+  	pushMessageSocket.on('populate', function(data) {
+    	alert( ' ######### pushMessageSocket message ############## '+data);
+    });
+
+    pushMessageSocket.on('update', function (data) {        
+        alert( ' ######### pushMessageSocket new update ############## '+JSON.stringify(data));
+    });
+
+	locationSocket.socket.on('error', function (reason){
+		alert('Unable to connect Socket.IO'+reason);
+	});
+
+	locationSocket.on('connect', function (){	  
+		socket.emit("device", { device_id:<%= device[0].id %> });
+	});
+
+  	locationSocket.on('populate', function(data) {
+    	alert( ' ######### locationSocket message ############## '+data);
+    });
+
+    locationSocket.on('update', function (data) {        
+        alert( ' ######### locationSocket new update ############## '+JSON.stringify(data));
+    });    
+
+	/*var mapOptions = {
 	  center: new google.maps.LatLng(-34.397, 150.644),
 	  zoom: 8,
 	  mapTypeId: google.maps.MapTypeId.ROADMAP,
 	  scrollwheel: false
 	};
 
-	var map = new google.maps.Map(document.getElementById("map_canvas"),mapOptions);
+	var map = new google.maps.Map(document.getElementById("map"),mapOptions); */
+
+	setMapDetails();
+
 	setTimeout('getPushMessagesHistory()', 1000);
 });
 
-sendmessage = function() {
+setMapDetails = function() {
 	
+	var map = L.map('map',{
+        center: [39.74739, -105],
+        zoom: 16,
+        scrollWheelZoom: false,
+        zoomControl: false
+    });
+    
+    var zoomFS = new L.Control.ZoomFS(); 
+    map.addControl(zoomFS);
 
+    L.tileLayer('http://{s}.tile.cloudmade.com/9c35b088a373420599be6e705d52a055/997/256/{z}/{x}/{y}.png', {
+    	attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
+	    maxZoom: 18
+	}).addTo(map);		
+
+    L.marker([39.74739, -105]).bindLabel('I am here', { noHide: true }).addTo(map).showLabel();	
+    
+    var bikeIcon = L.icon({
+      iconUrl: '/leaflet/bike.png',
+      iconSize: [25, 39],
+      iconAnchor: [12, 39],
+      shadowUrl: null
+    });
+
+    var line = L.polyline([[39.7471494,-104.9998241,],[39.7502833,-104.9983545],[39.7444271,-104.9963919]]);
+
+    var animatedMarker = L.animatedMarker(line.getLatLngs(), {
+      autoStart: false,
+      icon: bikeIcon,
+      onEnd: function() {
+        $(this._shadow).fadeOut();
+        $(this._icon).fadeOut(1000, function(){
+          map.removeLayer(this);
+        });
+      }
+    });
+
+    map.addLayer(animatedMarker);
+
+    $(animatedMarker._icon).hide().fadeIn(500, function(){
+      animatedMarker.start();
+    });
+    
+    setTimeout(function() {
+      // Stop the animation
+      //animatedMarker.stop();
+    }, 8000); 
+
+    var popup = L.popup();
+        
+    function onMapClick(e) {
+    	popup
+            .setLatLng(e.latlng)
+            .setContent("You clicked the map at " + e.latlng.toString())
+            .openOn(map);
+
+      var p = new R.Pulse(
+          e.latlng, 
+          6,
+          {'stroke': '#2478ad', 'fill': '#30a3ec'}, 
+          {'stroke': '#30a3ec', 'stroke-width': 3});
+
+      map.addLayer(p);
+
+      setTimeout(function() {
+        map.removeLayer(p);
+      }, 8000);   
+
+    }
+
+    map.on('click', onMapClick);
+
+
+    map.on('enterFullscreen', function(){
+  		if(window.console) window.console.log('enterFullscreen');
+	});
+
+	map.on('exitFullscreen', function(){
+	  if(window.console) window.console.log('exitFullscreen');
+	});
+}
+
+showAlert = function(msg) {
+	$('#alertbody').html('<p>'+msg+'</p>');
+	$('#alertmodal').modal('show');
+}
+
+sendmessage = function() {	
 	var pushMessage = $("#message").val();
 	if( pushMessage.length == 0) {
 		alert(' Please enter a message');
@@ -90,13 +237,13 @@ sendmessage = function() {
 	            // log a message to the console
 	            var result = JSON.parse(response);
 	            if( result[0].status == '200') {
-	              alert(' Successfully sent the message');
+	              	showAlert(' Successfully sent the message');
 	            } else if( result[0].status == '400') {
-	            	alert(' ERROR: Sending message '+result[1].error);
+	            	showAlert(' ERROR: Sending message '+result[1].error);
 	            }
 	        },
 	        error: function(jqXHR, textStatus, errorThrown){
-	        	alert(" Error while sending push message "+testStatus+"  : "+errorThrown);
+	        	showAlert(" Error while sending push message "+testStatus+"  : "+errorThrown);
 	        },
 	        complete: function(){
 	            // enable the inputs
@@ -111,12 +258,15 @@ getPushMessagesHistory = function() {
 	        url: "/device/"+deviceid+"/push_messages",
 	        type: "get",
 	        success: function(response, textStatus, jqXHR){
-	            // log a message to the console
-	            alert(response);
-	            parsePushHistoryResponse(response);
+	        	var result = response;
+	            if( result[0].status == '200') {
+	              	parsePushHistoryResponse(response);
+	            } else if( result[0].status == '400' || result[0].status == '422') {
+	            	showAlert(' ERROR: Sending message '+result[1].error);
+	            }	        		            
 	        },
 	        error: function(jqXHR, textStatus, errorThrown){
-	        	alert(" Error while getting message history "+testStatus+"  : "+errorThrown);
+	        	showAlert(" Error while getting message history "+testStatus+"  : "+errorThrown);
 	        },
 	        complete: function(){
 	            // enable the inputs
@@ -127,23 +277,23 @@ getPushMessagesHistory = function() {
 parsePushHistoryResponse = function(response) {
 	
 	//movement_history
-	if(response.length == 0) {
+	var result = JSON.parse(response[1]);
+	if(result.length == 0) {
 		$("#messages_history").html("<p> No Messages sent </p>");
 		return;
 	} 
-	var result = JSON.parse(response);
+
 	var html="";
 	for(var i = 0; i< result.length; i++){
 		var message = result[i].push_message;
 		var created_at = parseInt(result[i].created_at);	
 		var sender = result[i].sender;
 		if( sender == 'server') {
-			html += '<div align="left" style="background:#99cc66;padding:5px">';
+			html += '<div align="left" style="margin:5px;background:#99cc66;padding:5px">';
 			html += '<img src="/images/server_sent.png" height="22" width="22">';			
 		} else if( sender == 'user') {
-			html += '<div align="right" style="background:#99cccc;padding:5px">';
+			html += '<div align="right" style="margin:5px;background:#99cccc;padding:5px">';
 		}
-
 		
 		html += " <h3>"+message+"</h3> <small> ";
 		var a = new Date(created_at);

@@ -2,3 +2,17 @@
 	height: 500px;
 	border: 5px solid #ccc;
  } 
+
+#map { 
+	position: relative;
+	border: 5px solid #ccc;
+	height: 500px; 
+}
+#map.leaflet-fullscreen {
+	margin: 0;
+}
+
+.leaflet-control-fullscreen {
+	background-image: url('/leaflet/icon-fullscreen.png');
+	margin-bottom: 5px;
+}  
