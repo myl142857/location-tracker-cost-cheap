@@ -1,12 +1,11 @@
 <% layout('device_header') -%>
 
 
-<div class='row'>	
-	<div class="span4 offset1 pull-left">
-		<h1>My Devices</h1>
-	</div>
+
+
+<div class="row">
 	<div class="span3 pull-right" style="margin-right:100px">
-			<button type="submit" id="deleteAccount" onClick="deleteAccount()" class="btn btn-danger">
+			<button id="deleteAccount" onClick="deleteAccount()" class="btn btn-danger">
   				<i class="icon-trash icon-white"></i> Delete Accout
 			</button>
 			<br/><br/><br/>
@@ -14,10 +13,9 @@
 			<button type="submit" id="sendmessage" onClick="sendMessage()" class="btn btn-success">
 			<i class="icon-envelope icon-white"></i> Send Message to All</button>
 	</div>
-</div>
 
-<div class="row">
-    <div class="span10 offset1">    	        
+    <div class="span10 pull-left offset1">    
+    	 <h1>My Devices</h1> <br/>	        
          <input type="text" id="name" name="name" class="input search-query" placeholder="Name"> <br/><br/>
          <input type="tel" id="device" name="device" class="input search-query" placeholder="Phone number">         
          <br/> <br/>
