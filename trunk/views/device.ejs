@@ -2,7 +2,7 @@
 <% stylesheet('/css/map.css') -%>
 <% stylesheet('http://cdn.leafletjs.com/leaflet-0.4/leaflet.css') -%>
 <% stylesheet('/leaflet/leaflet.label.css') -%>
-
+<% stylesheet('/leaflet/leaflet.draw.css') -%>
 
 <% script('https://maps.googleapis.com/maps/api/js?key=AIzaSyA9hZO1Yz7lBgNJiKfu5qznUxk2EhuqbxI&sensor=true') -%>
 <% script('http://localhost:3000/socket.io/socket.io.js') -%>
@@ -12,12 +12,14 @@
 <% script('/leaflet/AnimatedMarker.js') -%>
 <% script('/leaflet/raphael/rlayer-src.js') -%>
 <% script('/leaflet/raphael/raphael-min.js') -%>
+<% script ('/leaflet/leaflet.draw.js') -%>
 
 <p id="regid" style="display:none">APA91bF9Q7A9ZT02xOLWTNTgn3Bzd9BSIR1gh8tMd5S8dBC3BoPD0hnZeUkB0JKVyzawsuZTNJPDmvLcER9I7c52xFtuFbqwRvQ-o8lWa9pd64CtoYP_F1YhglLTNWLNH6TlRMu5zhdB</p>
 <p id="deviceid" style="display:none"> <%= device[0].id %> </p>
 <p style="display:none"> <%= device[0].push_notification_id %> </p>
-<div class="span6 pull-left">
-	<h3><span style="color:blue"><%= device[0].name %>'s</span> movement.</h3>				
+<div >
+	<h3 class="pull-left" ><span style="color:blue"><%= device[0].name %>'s</span> movement.</h3>	
+	<h3 class="pull-right"><a href="#" OnClick="getcurrentlocation();">Get current location</a></h3>
 </div>
 
 <table class="table">
@@ -130,7 +132,8 @@ setMapDetails = function() {
         center: [39.74739, -105],
         zoom: 16,
         scrollWheelZoom: false,
-        zoomControl: false
+        zoomControl: false,
+        doubleClickZoom: false
     });
     
     var zoomFS = new L.Control.ZoomFS(); 
@@ -206,6 +209,58 @@ setMapDetails = function() {
 	map.on('exitFullscreen', function(){
 	  if(window.console) window.console.log('exitFullscreen');
 	});
+
+	var drawControl = new L.Control.Draw({
+      marker: false,
+      rectangle: false,
+      polyline: false,
+      polygon: false,
+      cricle: {
+        shapeOptions: {
+            clickable: true
+        }
+      }
+    });
+    map.addControl(drawControl);
+    
+    var drawnItems = new L.LayerGroup();
+    // TODO:: Restrict user from drawing a circle if a circle is already present on map.
+    var pushPopup = null;
+    var pushCircle;
+    map.on('draw:circle-created', function (e) {
+      drawnItems.addLayer(e.circ);
+
+      pushCircle = e.circ;
+      e.circ.on('click', function(e) {
+        pushPopup = popup
+            .setLatLng(e.latlng)
+            .setContent('<div style="padding:10px" <h3><b>Send Message</b></h3> <br/><br/>'+ 
+              '<input id="push_message" type="text" size ="30"/> <br/>'+
+              '<button id="sendmessage" onClick="sendPopupPushmessage()" class="btn btn-success">'+
+              '<i class="icon-envelope icon-white"></i> Send </button></div><br/>'+ 
+              'You clicked in circle at' + e.latlng.toString())
+            .openOn(map);
+
+      });
+      setTimeout(function() {
+          //Remove the circle if user does nothing for 20secs.
+          checkToRemovePushCircle();
+        }, 10000); 
+    });
+
+    map.addLayer(drawnItems);
+
+    sendPopupPushmessage = function() {
+      var message = $("#push_message").val();
+      alert(message);
+    };
+
+    checkToRemovePushCircle = function() {
+        drawnItems.removeLayer(pushCircle);
+        $("#popup").remove();
+        //alert('check to remove');
+    	//setTimeout( checkToRemovePushCircle, 10000);
+    }
 }
 
 showAlert = function(msg) {
@@ -311,5 +366,10 @@ parsePushHistoryResponse = function(response) {
 	  	html += "</div>";
 	}
 	$("#messages_history").html(html);
+}
+
+getcurrentlocation = function() {
+	alert('get current location');
+
 }
 </script>  
