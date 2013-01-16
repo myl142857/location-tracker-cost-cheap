@@ -1,5 +1,6 @@
 var mysql = require('mysql');
 var crypto = require('crypto');
+var geoJSON = require('./geoJSON');
 
 // init;
 var client = mysql.createConnection({
@@ -9,29 +10,6 @@ var client = mysql.createConnection({
 }); 
 
 client.query('USE tracker_db');
-
-// create table
-/*var sql = ""+ "create table locations("+
-            " id int unsigned not null auto_increment,"+
-            " latitude varchar(20) not null default 'unknown',"+
-            " longitude varchar(20) not null default 'unknown',"+
-            " accuracy varchar(20) not null default 'unknown',"+
-            " location varchar(100) default 'unknown',"+
-            " primary key (id)"+
-            ");"; 
-
-client.query(sql, function(err) {
-  if (err) { throw err; }
-}); */
-
-function extractKeywords(text) {
-  if (!text) return [];
-
-  return text.
-    split(/\s+/).
-    filter(function(v) { return v.length > 2; }).
-    filter(function(v, i, a) { return a.lastIndexOf(v) === i; });
-}
 
 // Inserts the user into the database.
 exports.add_user = function(user, callback) {
@@ -132,6 +110,7 @@ randomToken = function() {
 generateAccessCode = function() {
   return Math.floor(Math.random()*10000001);
 }
+
 // Phone number table.
 // Add phonenumber
 exports.add_device = function(user_id,name,countrycode,phonenumber,push_id,callback) {
@@ -225,45 +204,18 @@ exports.deletePhonumerById = function(id,callback) {
   });
 }
 
-// Push notification table.
-exports.addPushNotificationId = function(user_id,phonenumber,push_notification_id,device_os,callback) {
-  console.log(" ######## sql deletePhonumerById ######### "+id);
-  client.query("insert into push_ids (user_id,phonenumber,push_notification_id,device_os,) values (?,?,?,?,?)", 
-        [user_id, phonenumber,push_notification_id,phonenumber, device_os], 
-
-      function( err, results, fields)  {
-        if( err) {
-          console.log(" ######## DELETE Error ######### "+JSON.stringify(err));
-          callback(err,null);
-        }
-        console.log(" ####### DELETE device  ########"+JSON.stringify(results));
-        callback(null,results);
-  });
-}
-
 // Push Messages table.
-// Schema:: [ id, device_id, push_message_id (random generated id), Sender(SERVER, DEVICE), push_message,latitude, longitude, accuracy]
+// Schema:: [ id, device_id, push_message_id (random generated id), Sender(SERVER, DEVICE), 
+// push_message,latitude, longitude, accuracy]
 
-exports.add_push_message = function(device_id,push_message_id,push_message,sender,latitude,longitude,accuracy,callback) {
+exports.add_push_message = function(delivery_id,push_message_id,push_message,sender,latitude,longitude,accuracy,callback) {
 
-  var dateInMilliseconds = new Date().getTime();
+  var created_at = new Date().getTime();
 
-  // Convert millisesconds to date.
-  var a = new Date(dateInMilliseconds);
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var year = a.getFullYear();
-  var month = months[a.getMonth()];
-  var date = a.getDate();
-  var hour = a.getHours();
-  var min = a.getMinutes();
-  var sec = a.getSeconds();
-  var time = date+','+month+' '+year+' '+hour+':'+min+':'+sec ;
-  console.log(" ####### TIME is ######### "+time);
-
-  console.log(" #########  add_push_message  ############# "+device_id+" : "+push_message_id+" : "+push_message+" : "+dateInMilliseconds+" : "+sender+" : "+latitude+" : "+longitude+" : "+accuracy);
+  console.log(" #########  add_push_message  ############# "+delivery_id+" : "+push_message_id+" : "+push_message+" : "+sender+" : "+latitude+" : "+longitude+" : "+accuracy);
   // Insert to the table.
-  client.query("insert into push_messages (device_id,push_message_id,push_message,sender,created_at,latitude,longitude,accuracy) values (?,?,?,?,?,?,?,?)", 
-    [device_id,push_message_id,push_message,sender,dateInMilliseconds,latitude,longitude,accuracy], 
+  client.query("insert into push_messages (delivery_id,push_message_id,push_message,sender,created_at,latitude,longitude,accuracy) values (?,?,?,?,?,?,?,?)", 
+    [delivery_id,push_message_id,push_message,sender,created_at,latitude,longitude,accuracy], 
     function(err, info) {
       // callback function returns last insert id
       if( err) {
@@ -296,9 +248,10 @@ console.log(" ######## checkPushMessageIdPresent ####### "+id);
 }
 
 // Get history of messages sent/received for a device.
-exports.getAllPushMessages = function(device_id,callback){
-  client.query( "select * from push_messages where device_id=? order by push_message_id,created_at",
-      [device_id],function( err, results, fields)  {
+exports.getAllPushMessages = function(delivery_id,callback){
+
+  client.query( "select * from push_messages where delivery_id=? order by push_message_id,created_at",
+      [delivery_id ],function( err, results, fields)  {
           if( err) {
             console.log(" ####### GET all push messages SQL ERROR  ########"+JSON.stringify(err));
             callback(err,null);
@@ -309,35 +262,82 @@ exports.getAllPushMessages = function(device_id,callback){
   });
 }
 
+// Delivery table.
+exports.add_delivery = function(data,callback) {
+  console.log(" #########  add_delivery  ############# "+data.content+" : "+data.bill_number+" : "+data.device_id);
+  var startTime = new Date().getTime();
+  // Insert to the table.
+  client.query("insert into deliveries (device_id,delivery_content,bill_number,delivered,started_at,delivered_at) values (?,?,?,?,?,?)", 
+    [data.device_id,data.content,data.bill_number,0,startTime,0], 
+    function(err, info) {
+      // callback function returns last insert id
+      if( err) {
+        console.log(" ####### ERROR ######## "+JSON.stringify(err));
+        callback(err,null);
+      } else {
+        console.log(" ####### SUCESS ######## "+JSON.stringify(info));
+        callback(err,info.insertId);
+      }
+  });
+}
+
+exports.updateDeliveryStatus = function(delivery_id,delivered,callback) {
+    var endTime = new Date().getTime();
+    console.log(" #########  updateDeliveryStatus  ############# "+" : "+delivered+" : "+endTime);
+    client.query( "update deliveries set delivered=?,delivered_at=? where id=?",
+      [delivered,endTime,delivery_id],
+      function( err, results, fields)  {
+          if( err) {
+            console.log(" ####### GET user  ########"+JSON.stringify(err));
+            callback(err,null)
+          } else {
+            console.log(" ####### GET user  ########"+JSON.stringify(results));
+            callback(err,results);
+        }
+  });
+}
+
+// Get history of delivereis for a device.
+exports.getAllDeliveries = function(device_id,callback){
+  client.query( "select * from deliveries where device_id=? order by started_at",
+      [device_id],function( err, results, fields)  {
+          if( err) {
+            console.log(" ####### GET all deliveries SQL ERROR  ########"+JSON.stringify(err));
+            callback(err,null);
+          } else {
+            console.log(" ####### GET all deliveries  ########"+JSON.stringify(results));
+            callback(null,results);
+          }
+  });
+}
 
 // Locations table.
 
 // function to create location data
 exports.add_location = function(data, callback) {
-  console.log(" #########  add_location  ############# "+data.location);
-  client.query("insert into locations (latitude, longitude, accuracy, location) values (?,?,?,?)", 
-    [data.latitude, data.longitude, data.accuracy, data.location], 
+  
+  var created_at = new Date().getTime();
+  console.log(" #########  add_location  ############# : "+data.delivery_id+" : "+data.latitude+" : "+data.longitude+" : "+data.accuracy+" : "+data.location+" : "+created_at);
+  client.query("insert into locations (delivery_id,latitude,longitude,accuracy,address,created_at) values (?,?,?,?,?,?)", 
+    [data.delivery_id, data.latitude, data.longitude, data.accuracy, data.location, created_at], 
     function(err, info) {
-    if( err )  {
-      callback(-1);
-      return;
+    if( err ) {
+      console.log(" #########  add_location error ############# "+JSON.stringify(err));
+      callback(err,null);
+    } else {
+      console.log(" #########  add_location success ############# "+JSON.stringify(info));
+      callback(null,info.insertId);  
     }
-
-    // callback function returns last insert id
-    callback(info.insertId);
   });
 }
 
 // function to get list of employees
-exports.get_locations = function(callback) {
-  client.query("select * from locations", function(err, results, fields) {
+exports.get_locations = function(delivery_id,callback) {
+  client.query("select * from locations where delivery_id=?",[delivery_id],function(err, results, fields) {
     // callback function returns employees array
-    callback(results);
+    var geoJSONString = geoJSON.generateGeoJSON(results);
+    console.log(" ####### get locations ######## "+JSON.stringify(geoJSONString));
+    callback(null,geoJSONString);
   });
 }
 
-// Send message details.
-// < device Id, Phonenumber, Message >
-
-// Received message details.
-// < push_notification_id, Phonenumber, Message >

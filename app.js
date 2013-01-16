@@ -15,7 +15,6 @@ var location_movement_socket = io.of("/locations");
 var connect = require('express/node_modules/connect');
 var parseSignedCookie = connect.utils.parseSignedCookie;
 var cookie = require('express/node_modules/cookie');
-var db_helper = require("./js/db_helper.js");
 var tracker = require('./js/tracker');
 var sql_model = require('./js/db_helper');
 var models = require('./js/models');
@@ -359,10 +358,10 @@ app.post('/verify_accesscode', function(req, res) {
        var jsonResponse = [{status:'422'},{errorcode:'3004', error:"Missing mandatory parameters.", extra_info:"Device OS is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
-  } else if( req.body.phonenumber instanceof string) {
+  } else if( req.body.phonenumber instanceof String) {
       //TODO: Check if phonenumber contains valid number and between 8 to 10 number range.
       var jsonResponse = [{status:'422'},{errorcode:'3005', error:"Invalid Parameter.",extra_info:"phonenumber"}];
-  } else if( req.body.accesscode instanceof string) {
+  } else if( req.body.accesscode instanceof String) {
       var jsonResponse = [{status:'422'},{errorcode:'3006', error:"Invalid Parameter.",extra_info:"accesscode"}];
   }
 
@@ -443,14 +442,17 @@ app.post('/send_accesscode',function(req,res) {
 });
 
 // Send push MSG GCM.
-app.post('/device/push_message', function(req, res) {
-  console.log( "##########  /POST push_message ############ "+req.body.push_message);
-  console.log("####### /POST push_message  ###### "+req.body.push_notification_id);
+app.post('/delivery/:id/push_message', function(req, res) {
+  console.log( "##########  /POST push_message ############ "+req.params.id+" : "+req.body.push_message+" : "+req.body.push_notification_id);
 
   if( !req.body.push_message) {
        var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Push Message is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;    
+  } else if(!req.params.id) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Delivery ID is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
   } else if(!req.body.push_notification_id) {
        var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Push Notification ID is missing"}];
        res.send(JSON.stringify(jsonResponse));  
@@ -462,10 +464,10 @@ app.post('/device/push_message', function(req, res) {
       // Check for messageId, Add to push_messages table.
       if( result && result.messageId) {
         var jsonResponse = [{ status: '200'}];
-        console.log('###### Send Message result FOUND ######## '+result.messageId);
-        sql_model.add_push_message(req.body.device_id,push_message_id,req.body.push_message,"server",req.body.latitude,
+        sql_model.add_push_message(req.params.id,push_message_id,req.body.push_message,"server",req.body.latitude,
           req.body.longitude,req.body.accuracy,function(err,add_push_result){
             console.log(" ###### Result sql model push message ###### "+JSON.stringify(add_push_result));
+            // TODO: if (error) send client update.
           });
       } else {
         // Check for errorCode{"errorCode":"NotRegistered"},InvalidRegistration,MessageTooBig,InternalServerError
@@ -506,11 +508,11 @@ app.post('/devices/push_message_to_all', function(req, res) {
 });
 
 // Get all push messages for a device.
-app.get('/device/:id/push_messages',function(req,res){
-  console.log( " ##########  /GET push_messages ############ "+req.params.id);
+app.get('/delivery/:id/push_messages',function(req,res){
+  console.log( " ##########  /GET push_messages delivery id ############ "+req.params.id);
 
  if(!req.params.id) {
-       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Device id is missing"}];
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Delivery id is missing"}];
        res.send(JSON.stringify(jsonResponse));  
        return;
   }
@@ -558,52 +560,195 @@ app.post('/respond_push_message', function(req, res) {
 
 });
 
-// Get session_id, phonenumber
-app.post('/update_location', function(request, response) {
-  console.log( " ##########  request body ############ "+request.body.latitude+"   "+request.body.longitude+"  "+request.body.accuracy);
+
+// POST: Api to start the delivery track.
+app.post('/device/:id/delivery', function(req, res) {
+
+  console.log(" ####### /POST respond_push_message ####### "+req.params.id+" : "+req.body.bill_number+" : "+req.body.delivery_content);
+  if( !req.params.id) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Device id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;    
+  } else if(!req.body.bill_number) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Bill Number is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  } else if(!req.body.delivery_content) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Delivery content is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  }
+  
   var data = {
-          latitude: request.body.latitude,
-          longitude: request.body.longitude,
-          accuracy: request.body.accuracy
+        device_id: req.params.id,
+        content: req.body.delivery_content,
+        bill_number: req.body.bill_number
   };
 
-  add_location(data);
-  console.log(JSON.stringify(request.body));
-  response.contentType('application/json');
+  sql_model.add_delivery(data,function(err,result) {
+    console.log(" ###### Result sql model add delivery ###### "+JSON.stringify(result));
+    if( err ) {
+      var jsonResponse = [{status:'400'}];
+    } else {
+      var jsonResponse = [{ status: '200'},{id:result}];
+    }
+    res.send(jsonResponse);
+  });
 
-  // Normally, the would probably come from a database, but we can cheat:
-  var people = [
-    { name: 'Dave', location: 'Atlanta' },
-    { name: 'Santa Claus', location: 'North Pole' },
-    { name: 'Man in the Moon', location: 'The Moon' }
-  ];
-
-  var peopleJSON = JSON.stringify(people);
-  response.send(peopleJSON);
 });
 
-var clientcon;
+// PUT:: Update the delivery status to completed.
+app.put("/device/:device_id/delivery/:delivery_id", function(req,res){
+  console.log( " ##########  /PUT push_messages ############ "+req.params.delivery_id);
+  if( !req.params.delivery_id) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Delivery id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;    
+  } else if(!req.body.delivered) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Delivered status is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  }
+
+  sql_model.updateDeliveryStatus(req.params.delivery_id,req.body.delivered,function(err,result) {
+    console.log(" ###### Result sql model update delivery ###### "+JSON.stringify(result));
+    if( err ) {
+      var jsonResponse = [{status:'400'}];
+    } else {
+      var jsonResponse = [{ status: '200'}];
+    }
+    res.send(jsonResponse);
+  });
+
+});
+
+// Get All the delivery list for a device
+// TODO: include for session_id 
+app.get('/device/:id/deliveries',function(req,res){
+  console.log( " ##########  /GET delieveries ############ "+req.params.id);
+
+  if(!req.params.id) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Device id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  }
+  sql_model.getAllDeliveries(req.params.id,function(err,result) {
+    
+    if(err) {
+      res.send([]);      
+    } else {
+      var jsonResponse = [{ status: '200'}];
+      jsonResponse.push(JSON.stringify(result));
+      console.log('###### all deliveries result ######## '+JSON.stringify(jsonResponse));
+      res.send(jsonResponse);
+    }
+  });
+});
+
+// Get session_id, phonenumber
+app.post('/delivery/:id/add_location', function(req, res) {
+  console.log( " ##########  request body ############ "+req.params.id+" : " +req.body.latitude+"   "+req.body.longitude+"  "+req.body.accuracy);
+
+  if(!req.params.id) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Delivery id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  } else if(!req.body.latitude) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Latitude is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  } else if(!req.body.longitude) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Longitude id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  } else if(!req.body.accuracy) {
+       var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Accuracy id is missing"}];
+       res.send(JSON.stringify(jsonResponse));  
+       return;
+  } 
+
+  var data = {
+          delivery_id: req.params.id,
+          latitude: req.body.latitude,
+          longitude: req.body.longitude,
+          accuracy: req.body.accuracy
+  };
+
+  geocoder.reverseGeocode( data.latitude, data.longitude, function ( err, resultdata ) {
+      // do stuff with data
+      var result = JSON.stringify(resultdata);
+      var jsonData = JSON.parse(result);
+      console.log( '############# parse json  ########## '+ jsonData.results[0].formatted_address);
+      
+      if(err) {
+        var jsonResponse = [{status:'400'}];
+        res.send(jsonResponse);
+        return;
+      }
+      
+      data.location = jsonData.results[0].formatted_address;
+          // create location, when its done repopulate locations on client
+      sql_model.add_location(data, function(err,result) {
+        if(err) {
+          var jsonResponse = [{status:'400'}];
+        } else {
+          var jsonResponse = [{ status: '200'},{id:result}];
+          jsonResponse.push(JSON.stringify(result));
+          console.log('###### all deliveries result ######## '+JSON.stringify(jsonResponse));          
+        }
+        res.send(jsonResponse);
+      });
+
+  });
+});
+
+// Get all the list of location points for a delivery.
+app.get('/delivery/:id/location_movements', function(req, res) {
+  console.log( " ##########  request body ############ "+req.params.id );
+  res.contentType('application/json');
+
+  if(!req.params.id) {
+     var jsonResponse = [{status:'422'},{errorcode:'3001', error:"Missing mandatory parameters.", extra_info:"Delivery id is missing"}];
+     res.send(JSON.stringify(jsonResponse));  
+     return;
+  }
+  
+  sql_model.get_locations(req.params.id,function(err,result) {    
+    if(err) {
+      res.send([]);      
+    } else {
+      // Generate geoGSON string.
+
+      var jsonResponse = [{ status: '200'}];
+      jsonResponse.push(JSON.stringify(result));
+      console.log('###### all deliveries result ######## '+JSON.stringify(jsonResponse));
+      res.send(jsonResponse);
+    }
+  });
+
+});
+
 
 io.configure(function() {
-    io.set('authorization', function (handshakeData, accept) {
-      console.log(" ######## Socket io authorization ######### "+JSON.stringify(handshakeData));    
-      if (handshakeData.headers.cookie) {
-        
-        handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
-        handshakeData.sessionID = parseSignedCookie(handshakeData.cookie['express.sid'], 'secret');
-        console.log(" ######## Socket io authorization cookie ######### "+handshakeData.cookie['express.sid']+" : "+handshakeData.sessionID);
-        
-        if (handshakeData.cookie['express.sid'] == handshakeData.sessionID) {
-          console.log(" ######## Socket io authorization MATCH ######### "+handshakeData.cookie['express.sid']+" : "+handshakeData.sessionID);
-          return accept('Cookie is invalid.', false);
-        }
+  io.set('authorization', function (handshakeData, accept) {
+    console.log(" ######## Socket io authorization ######### "+JSON.stringify(handshakeData));    
+    if (handshakeData.headers.cookie) {
+      
+      handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
+      handshakeData.sessionID = parseSignedCookie(handshakeData.cookie['express.sid'], 'secret');
+      console.log(" ######## Socket io authorization cookie ######### "+handshakeData.cookie['express.sid']+" : "+handshakeData.sessionID);
+      
+      if (handshakeData.cookie['express.sid'] == handshakeData.sessionID) {
+        console.log(" ######## Socket io authorization MATCH ######### "+handshakeData.cookie['express.sid']+" : "+handshakeData.sessionID);
+        return accept('Cookie is invalid.', false);
+      }
 
-      } else {
-        console.log(" ######## Socket io no cookie transmitted ######### ");
-        return accept('No cookie transmitted.', false);
-      } 
-      console.log(" ######## Socket io accepted ######### ");
-      accept(null, true);
+    } else {
+      console.log(" ######## Socket io no cookie transmitted ######### ");
+      return accept('No cookie transmitted.', false);
+    } 
+    console.log(" ######## Socket io accepted ######### ");
+    accept(null, true);
   });
 }); 
 
@@ -621,7 +766,7 @@ push_message_socket.on('connection', function(socket) {
         console.log('########## user emit #######' + data.device_id);
         // Make sure we have the data we need...
         if (data == null || (data.device_id || null) == null) {
-            return;
+          return;
         }
         // Join the user to their own private channel so we can send them notifications...
         socket.join(data.device_id);  
@@ -630,11 +775,9 @@ push_message_socket.on('connection', function(socket) {
       }
   });
 
-  socket.emit('populate', "XXXxxxxxxxxxx");
-  
-  //client.on('add location', add_location); 
-  
+  socket.emit('populate', "XXXxxxxxxxxxx");    
 }); // End of push_messages socket.io
+
 
 location_movement_socket.on('connection', function(socket) {
 
@@ -658,31 +801,11 @@ location_movement_socket.on('connection', function(socket) {
       }
   });
 
-  socket.emit('populate', "XXXxxxxxxxxxx");
-  
+  socket.emit('populate', "XXXxxxxxxxxxx");  
   //client.on('add location', add_location); 
-  
+
 }); // End of location movement socket.io
 
-add_location = function(data) {
-
-  geocoder.reverseGeocode( data.latitude, data.longitude, function ( err, resultdata ) {
-        // do stuff with data
-        var result = JSON.stringify(resultdata);
-        var jsonData = JSON.parse(result);
-        console.log( '############# parse json  ########## '+ jsonData.results[0].formatted_address);
-
-        data.location = jsonData.results[0].formatted_address;
-            // create location, when its done repopulate locations on client
-        db_helper.add_location(data, function(lastId) {
-          // repopulate employees on client
-          db_helper.get_locations(function(locations) {
-            console.log('************** Emit populate *********** '); 
-            clientcon.emit('populate', locations);
-          });
-        });
-  }); // End of reverse geocode.
-} 
 
 
 
