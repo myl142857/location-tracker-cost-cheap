@@ -5,7 +5,7 @@
 
 <div class="row">
 	<div class="span3 pull-right" style="margin-right:100px">
-			<button id="deleteAccount" onClick="deleteAccount()" class="btn btn-danger">
+			<button id="deleteAccount" onClick="generate()" class="btn btn-danger">
   				<i class="icon-trash icon-white"></i> Delete Accout
 			</button>
 			<br/><br/><br/>
@@ -282,6 +282,10 @@ deleteDevice = function(id) {
     });
 }
 
+generate = function() {
+	
+}
+
 deleteAccount = function() {
 	$('#delaccountmodal').modal('show');
 	$('#delaccountmodal .yesBtn').click(function() {   
@@ -330,7 +334,7 @@ sendMessage = function() {
 	        complete: function(){
 	            // enable the inputs
 	        }
-	    }); // End of ajax
+	}); // End of ajax
 }
 
 </script>
