@@ -242,7 +242,7 @@ addDevicePost = function(){
     } else if( ! $('#device').val() ) {
         showAlert('Please enter a valid phone number');
         return;
-    } if( !(phonenumber.length > 8 && phonenumber.length < 10 )) {
+    } if( !(phonenumber.length >= 8 && phonenumber.length <= 10 )) {
         showAlert('Invalid Phonenumber');
         return;
     } else {

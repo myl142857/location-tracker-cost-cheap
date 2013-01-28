@@ -162,63 +162,6 @@ setMapDetails = function() {
 	    maxZoom: 18
 	}).addTo(map);		
 
-    L.marker([39.74739, -105]).bindLabel('I am here', { noHide: true }).addTo(map).showLabel();	
-    
-    var bikeIcon = L.icon({
-      iconUrl: '/leaflet/bike.png',
-      iconSize: [25, 39],
-      iconAnchor: [12, 39],
-      shadowUrl: null
-    });
-
-    var line = L.polyline([[39.7471494,-104.9998241,],[39.7502833,-104.9983545],[39.7444271,-104.9963919]]);
-
-    var animatedMarker = L.animatedMarker(line.getLatLngs(), {
-      autoStart: false,
-      icon: bikeIcon,
-      onEnd: function() {
-        $(this._shadow).fadeOut();
-        $(this._icon).fadeOut(1000, function(){
-          map.removeLayer(this);
-        });
-      }
-    });
-
-    map.addLayer(animatedMarker);
-
-    $(animatedMarker._icon).hide().fadeIn(500, function(){
-      animatedMarker.start();
-    });
-    
-    setTimeout(function() {
-      // Stop the animation
-      //animatedMarker.stop();
-    }, 8000); 
-
-    var popup = L.popup();
-        
-    function onMapClick(e) {
-    	popup
-            .setLatLng(e.latlng)
-            .setContent("You clicked the map at " + e.latlng.toString())
-            .openOn(map);
-
-      var p = new R.Pulse(
-          e.latlng, 
-          6,
-          {'stroke': '#2478ad', 'fill': '#30a3ec'}, 
-          {'stroke': '#30a3ec', 'stroke-width': 3});
-
-      map.addLayer(p);
-
-      setTimeout(function() {
-        map.removeLayer(p);
-      }, 8000);   
-
-    }
-
-    map.on('click', onMapClick);
-
 
     map.on('enterFullscreen', function(){
   		if(window.console) window.console.log('enterFullscreen');
@@ -270,13 +213,81 @@ setMapDetails = function() {
     }
 }
 
+var currentDeliveryLayer = null;
+
 rightnow = function() {
+
 	if( !circleControlAdded ) {
 		map.addControl(drawControl);
 		map.addControl(pushMessageControl);
 		map.removeControl(pushHistoryControl);
 		circleControlAdded = true;
 	}
+
+	if(geoJSONLayer != null) {
+		map.removeLayer(geoJSONLayer);
+		geoJSONLayer = null;
+	}
+
+
+	var currentMkr = L.marker([39.7471494,-104.9998241]).bindPopup('This is Littleton, CO.').bindLabel('I am here', { noHide: true }).showLabel();
+	currentDeliveryLayer = L.layerGroup([currentMkr]);
+
+    var bikeIcon = L.icon({
+      iconUrl: '/leaflet/bike.png',
+      iconSize: [25, 39],
+      iconAnchor: [12, 39],
+      shadowUrl: null
+    });
+
+    var line = L.polyline([[39.7471494,-104.9998241],[39.7502833,-104.9983545],[39.7444271,-104.9963919]]);
+
+    var animatedMarker = L.animatedMarker(line.getLatLngs(), {
+      autoStart: false,
+      icon: bikeIcon,
+      onEnd: function() {
+        $(this._shadow).fadeOut();
+        $(this._icon).fadeOut(1000, function(){
+          map.removeLayer(this);
+        });
+      }
+    });
+
+    //currentDeliveryLayer.addLayer(animatedMarker);
+     map.addLayer(animatedMarker);
+    $(animatedMarker._icon).hide().fadeIn(500, function(){
+      animatedMarker.start();
+    });
+    
+    setTimeout(function() {
+      // Stop the animation
+      animatedMarker.stop();
+    }, 8000); 
+
+    var popup = L.popup();
+        
+    function onMapClick(e) {
+	    popup
+	        .setLatLng(e.latlng)
+	        .setContent("You clicked the map at " + e.latlng.toString())
+	        .openOn(map);
+
+	      var p = new R.Pulse(
+	          e.latlng, 
+	          6,
+	          {'stroke': '#2478ad', 'fill': '#30a3ec'}, 
+	          {'stroke': '#30a3ec', 'stroke-width': 3});
+
+	      map.addLayer(p);
+
+	      setTimeout(function() {
+	        map.removeLayer(p);
+	      }, 8000);   
+
+    }
+
+    //map.on('click', onMapClick);
+    currentDeliveryLayer.addTo(map);
 }
 
 deliveriesnow = function() {
@@ -286,6 +297,11 @@ deliveriesnow = function() {
 		map.addControl(pushHistoryControl);
 		circleControlAdded = false;		
 	}	
+
+	if(currentDeliveryLayer != null) {
+		map.removeLayer(currentDeliveryLayer);
+		currentDeliveryLayer = null;
+	}
 }
 
 showAlert = function(msg) {
@@ -360,7 +376,7 @@ getPushMessagesHistory = function(delivery_id) {
 }
 
 parsePushHistoryResponse = function(response) {
-	alert(response);
+
 	var result = JSON.parse(response[1]);
 	if(result.length == 0) {
 		$("#messages_history").html("<p> No Messages sent </p>");
@@ -498,7 +514,7 @@ getLocationPoints = function(delivery_id) {
 	        success: function(response, textStatus, jqXHR){
 	        	var result = response;
 	            if( result[0].status == '200') {
-	              	parseGeoJSON(response);
+	              	parseGeoJSON(response[1]);
 	            } else if( result[0].status == '400' || result[0].status == '422') {
 	            	$("#delivery_history").html(' ERROR: Fetching location movements '+result[1].error);
 	            }	        		            
@@ -512,8 +528,56 @@ getLocationPoints = function(delivery_id) {
 	}); // End of ajax
 } 
 
-parseGeoJSON = function(response) {
-	alert(response);
+var geoJSONLayer = null;
+parseGeoJSON = function(geoJSON) {
+
+	function onEachFeature(feature, layer) {
+	    if (feature.properties && feature.properties.popupContent) {
+	        layer.bindPopup(feature.properties.popupContent);
+	    }
+	}
+	
+	/*alert(JSON.stringify(geoJSON.features[0].geometry.coordinates[0]));
+	alert(JSON.stringify(geoJSON.features[0].geometry.coordinates[1]));
+	alert(JSON.stringify(geoJSON.features[geoJSON.features.length-2].geometry.coordinates[0]));
+	alert(JSON.stringify(geoJSON.features[geoJSON.features.length-2].geometry.coordinates[1])); */
+
+	var startLatLng = [];
+	var endLatLng = [];
+
+	startLatLng.push(geoJSON.features[0].geometry.coordinates[1]);
+	startLatLng.push(geoJSON.features[0].geometry.coordinates[0]);
+
+	endLatLng.push(geoJSON.features[geoJSON.features.length-2].geometry.coordinates[1]);
+	endLatLng.push(geoJSON.features[geoJSON.features.length-2].geometry.coordinates[0]);
+
+	alert(JSON.stringify(startLatLng))
+	alert(JSON.stringify(endLatLng));
+
+	
+	// Add the start and end markers with labels.
+	var startMkr = L.marker(startLatLng).bindLabel('Start', { noHide: true }).showLabel();
+	var endMkr = L.marker(endLatLng).bindLabel('Start', { noHide: true }).showLabel();
+	geoJSONLayer = L.layerGroup([startMkr,endMkr]);
+
+	//geoJSONLayer.add(L.marker(startLatLng).bindLabel('Start', { noHide: true }).showLabel());	
+	//geoJSONLayer.add(L.marker(endLatLng).bindLabel('Start', { noHide: true }).showLabel());
+
+	//L.marker(startLatLng).bindLabel('End', { noHide: true }).addTo(map).showLabel();	
+	//L.marker(endLatLng).bindLabel('End', { noHide: true }).addTo(map).showLabel();	
+
+    var geoJSON1 = L.geoJson(geoJSON, {
+	    onEachFeature: onEachFeature,
+		pointToLayer: function (feature, latlng) {
+
+			if(feature.properties.style)
+    	    	return L.circleMarker(latlng, feature.properties.style);
+    	    else
+    	    	return;
+	    }      
+    }).bindLabel('Route to end point');
+    geoJSONLayer.addLayer(geoJSON1);
+    geoJSONLayer.addTo(map);
 }
 
 getcurrentlocation = function() {

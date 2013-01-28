@@ -338,7 +338,7 @@ app.get('/devices', loadUser, function(req, res) {
 // 400; 3012; Permission denied
 // 401; 1013; Invalid session
 app.post('/verify_accesscode', function(req, res) {
-  console.log( " ##########  /POST verify_accesscode ############ "+req.body.phonenumber);
+  console.log( " ##########  /POST verify_accesscode ############ "+req.body.phonenumber+" : "+req.body.accesscode);
   console.log( " ##########  /POST push notification id ############ "+req.body.push_notification_id);
   console.log( " ##########  /POST device os ############ "+req.body.device_os);
 
@@ -678,15 +678,19 @@ app.post('/delivery/:id/add_location', function(req, res) {
       // do stuff with data
       var result = JSON.stringify(resultdata);
       var jsonData = JSON.parse(result);
-      console.log( '############# parse json  ########## '+ jsonData.results[0].formatted_address);
+      
       
       if(err) {
         var jsonResponse = [{status:'400'}];
         res.send(jsonResponse);
         return;
       }
-      
+      if( jsonData.length == 0) {
+        data.location = "";
+      } else {
+      console.log( '############# reverseGeocode json  ########## '+ jsonData.results[0].formatted_address);
       data.location = jsonData.results[0].formatted_address;
+      }
           // create location, when its done repopulate locations on client
       sql_model.add_location(data, function(err,result) {
         if(err) {
@@ -694,7 +698,7 @@ app.post('/delivery/:id/add_location', function(req, res) {
         } else {
           var jsonResponse = [{ status: '200'},{id:result}];
           jsonResponse.push(JSON.stringify(result));
-          console.log('###### all deliveries result ######## '+JSON.stringify(jsonResponse));          
+          console.log('###### add location result ######## '+JSON.stringify(jsonResponse));          
         }
         res.send(jsonResponse);
       });
@@ -718,10 +722,8 @@ app.get('/delivery/:id/location_movements', function(req, res) {
       res.send([]);      
     } else {
       // Generate geoGSON string.
-
       var jsonResponse = [{ status: '200'}];
-      jsonResponse.push(JSON.stringify(result));
-      console.log('###### all deliveries result ######## '+JSON.stringify(jsonResponse));
+      jsonResponse.push(result);
       res.send(jsonResponse);
     }
   });
